@@ -1,0 +1,592 @@
+{% extends 'base.html.twig' %}
+{% block title %}Dashboard — Zeran Parcel{% endblock %}
+
+{% block body %}
+<style>
+    .dashboard { max-width: 1500px; margin: 0 auto; }
+
+    .dashboard-hero { position: relative; overflow: hidden; }
+    .dashboard-hero::before {
+        content: '';
+        position: absolute;
+        left: 0; top: 0; bottom: 0;
+        width: 5px;
+        background: linear-gradient(to bottom, var(--accent), var(--success, #22c55e));
+    }
+
+    .dashboard-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+    .dashboard-stat {
+        min-height: 110px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        position: relative;
+        overflow: hidden;
+        border: none !important;
+        color: #fff !important;
+    }
+    .dashboard-stat.s-accent { background: linear-gradient(135deg, #2d4a4a, #3d6363) !important; }
+    .dashboard-stat.s-success { background: linear-gradient(135deg, #2d5a4a, #3d7060) !important; }
+    .dashboard-stat.s-warning { background: linear-gradient(135deg, #4a6b6b, #5d8080) !important; }
+    .dashboard-stat.s-info { background: linear-gradient(135deg, #1a3636, #2d4a4a) !important; }
+    .dashboard-stat .stat-number, .dashboard-stat .stat-caption, .dashboard-stat .stat-label { color: #fff !important; }
+    
+    html.dark .dashboard-stat.s-accent { background: linear-gradient(135deg, #2d4a4a, #3d6363) !important; }
+    html.dark .dashboard-stat.s-success { background: linear-gradient(135deg, #2d5a4a, #3d7060) !important; }
+    html.dark .dashboard-stat.s-warning { background: linear-gradient(135deg, #4a6b6b, #5d8080) !important; }
+    html.dark .dashboard-stat.s-info { background: linear-gradient(135deg, #1a3636, #2d4a4a) !important; }
+    html.dark .dashboard-stat .stat-number, html.dark .dashboard-stat .stat-caption, html.dark .dashboard-stat .stat-label { color: #fff !important; }
+
+    .dashboard-stat .stat-number {
+        font-size: clamp(1.2rem, 1.8vw, 1.65rem);
+        font-weight: 800;
+        letter-spacing: -.03em;
+        font-variant-numeric: tabular-nums;
+        line-height: 1.15;
+    }
+    .dashboard-stat .stat-caption { color: var(--text-3); font-size: var(--fs-xs); line-height: 1.5; }
+
+    .dashboard-capaian-bar {
+        height: 12px;
+        background: var(--bg-hover);
+        border-radius: var(--radius-pill);
+        overflow: hidden;
+        margin-top: 10px;
+    }
+    .dashboard-capaian-bar > span {
+        display: block;
+        height: 100%;
+        border-radius: inherit;
+        transition: width .6s cubic-bezier(.4, 0, .2, 1);
+    }
+    .dashboard-capaian-pct {
+        font-size: clamp(2rem, 3.5vw, 2.75rem);
+        font-weight: 800;
+        letter-spacing: -.05em;
+        font-variant-numeric: tabular-nums;
+        line-height: 1;
+    }
+
+    .dashboard-section-title { font-size: var(--fs-lg); font-weight: 700; margin: 0; color: var(--text); }
+    .dashboard-section-subtitle { color: var(--text-3); font-size: var(--fs-xs); margin-top: 2px; }
+
+    .dashboard-card { height: 100%; overflow: hidden; }
+    .dashboard-card-header { padding: 14px 16px; border-bottom: 1px solid var(--border); }
+    .dashboard-card-body { padding: 16px; }
+    .dashboard-chart { height: 300px; position: relative; }
+
+    .chart-period-toggle {
+        display: inline-flex;
+        gap: 2px;
+        background: var(--bg-hover);
+        border-radius: var(--radius-sm);
+        padding: 3px;
+    }
+    .chart-period-toggle button {
+        border: none;
+        background: transparent;
+        padding: 5px 14px;
+        border-radius: calc(var(--radius-sm) - 2px);
+        font-size: var(--fs-xs);
+        font-weight: 600;
+        color: var(--text-3);
+        cursor: pointer;
+        transition: all .2s;
+    }
+    .chart-period-toggle button.active {
+        background: var(--accent);
+        color: var(--accent-fg);
+        box-shadow: 0 1px 3px rgba(0,0,0,.12);
+    }
+    .chart-period-toggle button:hover:not(.active) { color: var(--text); background: var(--bg-active); }
+
+    .chart-stats {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+        margin-top: 16px;
+        padding-top: 16px;
+        border-top: 1px solid var(--border);
+    }
+    .chart-stat-item { text-align: center; }
+    .chart-stat-value {
+        font-size: var(--fs-sm);
+        font-weight: 700;
+        color: var(--text);
+        font-variant-numeric: tabular-nums;
+    }
+    .chart-stat-label { font-size: var(--fs-xs); color: var(--text-3); margin-top: 2px; }
+
+    .dashboard-progress { height: 9px; background: var(--bg-hover); border-radius: var(--radius-pill); overflow: hidden; }
+    .dashboard-progress > span {
+        display: block;
+        height: 100%;
+        border-radius: inherit;
+        transition: width .3s ease;
+    }
+
+    .dashboard-list { display: grid; gap: 2px; }
+    .dashboard-list-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 16px;
+        transition: var(--transition);
+    }
+    .dashboard-list-row:hover { background: var(--bg-hover); }
+    .dashboard-list-row .row-main { min-width: 0; flex: 1; }
+    .dashboard-list-row .row-title { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .dashboard-list-row .row-meta { color: var(--text-3); font-size: var(--fs-xs); }
+
+    .dashboard-rank {
+        width: 26px; height: 26px;
+        flex: 0 0 26px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        background: var(--bg-hover);
+        color: var(--text-2);
+        font-size: var(--fs-xs);
+        font-weight: 700;
+    }
+    .dashboard-rank.is-top { background: var(--accent); color: var(--accent-fg); }
+
+    .dashboard-avatar {
+        width: 30px; height: 30px;
+        flex: 0 0 30px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: var(--radius-sm);
+        background: var(--bg-active);
+        color: var(--text);
+        font-size: var(--fs-xs);
+        font-weight: 700;
+    }
+
+    .dashboard-table td, .dashboard-table th { white-space: nowrap; }
+    .dashboard-table td:first-child { white-space: normal; }
+
+    @media (max-width: 991px) {
+        .dashboard-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 575px) {
+        .dashboard-grid { grid-template-columns: 1fr; }
+        .dashboard-chart { height: 240px; }
+        .chart-stats { grid-template-columns: repeat(2, 1fr); }
+    }
+</style>
+
+<div class="dashboard">
+    <section class="card dashboard-hero mb-3" aria-labelledby="dashboard-title">
+        <div class="p-4 page-hd-row align-items-center">
+            <div>
+                <h1 id="dashboard-title" class="mb-1 fs-2xl fw-bold">Selamat datang kembali</h1>
+                <p class="text-muted mb-0">Pantau target, setoran, dan aktivitas terbaru dari satu tempat.</p>
+            </div>
+            <div class="d-flex gap-2 flex-wrap">
+                <a href="{{ path('app_kolektif_input') }}" class="btn btn-outline-light"><i class="ph ph-play-circle me-1" aria-hidden="true"></i> Input kolektif</a>
+                <a href="{{ path('app_laporan_transaksi') }}" class="btn btn-outline-light"><i class="ph ph-chart-bar me-1" aria-hidden="true"></i> Buka laporan</a>
+            </div>
+        </div>
+    </section>
+
+    <section class="dashboard-grid mb-3" aria-label="Ringkasan utama">
+        <article class="card dashboard-stat p-3 s-accent">
+            <span class="stat-label">Total target</span>
+            <div>
+                <div class="stat-number">Rp {{ totalTarget|number_format(0, ',', '.') }}</div>
+                <div class="stat-caption mt-1">{{ totalAnggota|number_format(0, ',', '.') }} anggota, {{ totalKategori }} paket</div>
+            </div>
+        </article>
+        <article class="card dashboard-stat p-3 s-success">
+            <span class="stat-label">Sudah terkumpul</span>
+            <div>
+                <div class="stat-number text-success">Rp {{ totalSudahBayar|number_format(0, ',', '.') }}</div>
+                <div class="dashboard-capaian-bar mt-2" role="progressbar" aria-label="Capaian target" aria-valuenow="{{ min(persenCapaian, 100) }}" aria-valuemin="0" aria-valuemax="100"><span class="progress-gradient-success" style="width:{{ min(persenCapaian, 100) }}%"></span></div>
+                <div class="stat-caption mt-1">{{ persenCapaian }}% capaian, {{ anggotaLunas|number_format(0, ',', '.') }} anggota lunas</div>
+            </div>
+        </article>
+        <article class="card dashboard-stat p-3 s-warning">
+            <span class="stat-label">Sisa target</span>
+            <div>
+                <div class="stat-number text-warning">Rp {{ sisaTarget|number_format(0, ',', '.') }}</div>
+                <div class="stat-caption mt-1">{{ anggotaBelumLunas|number_format(0, ',', '.') }} anggota belum lunas</div>
+            </div>
+        </article>
+        <article class="card dashboard-stat p-3 s-info">
+            <span class="stat-label">Anggota aktif</span>
+            <div>
+                <div class="stat-number">{{ anggotaAktif|number_format(0, ',', '.') }}</div>
+                <div class="stat-caption mt-1">dari {{ totalAnggota|number_format(0, ',', '.') }} anggota, {{ totalReseller }} reseller</div>
+            </div>
+        </article>
+    </section>
+
+    <div class="row g-3 mb-3">
+        <div class="col-12">
+            <section class="card dashboard-card" aria-labelledby="trend-title">
+                <header class="dashboard-card-header d-flex justify-content-between align-items-center gap-2 flex-wrap"><meta charset="utf-8">
+                    <div><h2 id="trend-title" class="dashboard-section-title">Tren setoran</h2><div class="dashboard-section-subtitle">Pergerakan nominal transaksi pada periode terakhir</div></div>
+                    <div class="chart-period-toggle" role="group" aria-label="Pilih periode">
+                        <button type="button" data-period="6">6B</button>
+                        <button type="button" data-period="12" class="active">12B</button>
+                        <button type="button" data-period="24">24B</button>
+                        <button type="button" data-period="all">Semua</button>
+                    </div>
+                </header>
+                <div class="dashboard-card-body">
+                    {% if monthlyTrend|length %}
+                        <div class="dashboard-chart"><canvas id="trendChart" aria-label="Grafik tren setoran bulanan"></canvas></div>
+                        <div class="chart-stats" id="chartStats">
+                            <div class="chart-stat-item"><div class="chart-stat-value" id="statTotal">—</div><div class="chart-stat-label">Total</div></div>
+                            <div class="chart-stat-item"><div class="chart-stat-value" id="statAvg">—</div><div class="chart-stat-label">Rata-rata/bulan</div></div>
+                            <div class="chart-stat-item"><div class="chart-stat-value text-success" id="statBest">—</div><div class="chart-stat-label">Bulan terbaik</div></div>
+                            <div class="chart-stat-item"><div class="chart-stat-value text-danger" id="statWorst">—</div><div class="chart-stat-label">Bulan terendah</div></div>
+                        </div>
+                    {% else %}
+                        <div class="empty"><i class="ph ph-chart-bar" aria-hidden="true"></i><div class="empty-sub">Belum ada data tren setoran.</div></div>
+                    {% endif %}
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-3">
+        <div class="col-12 col-xl-8">
+            <section class="card dashboard-card" aria-labelledby="reseller-title">
+                <header class="dashboard-card-header d-flex justify-content-between align-items-start gap-2">
+                    <div><h2 id="reseller-title" class="dashboard-section-title">Performa reseller</h2><div class="dashboard-section-subtitle">Peringkat berdasarkan omzet</div></div>
+                    <a href="{{ path('app_reseller_index') }}" class="btn btn-sm btn-secondary">Semua</a>
+                </header>
+                <div class="dashboard-list">
+                    {% for r in topResellers %}
+                        {% set target = r.total_target ?: 0 %}
+                        {% set omzet = r.total_omzet ?: 0 %}
+                        {% set capaian = target > 0 ? (omzet / target * 100)|round(1) : 0 %}
+                        <div class="dashboard-list-row">
+                            <span class="dashboard-rank {{ loop.first ? 'is-top' : '' }}">{{ loop.index }}</span>
+                            <div class="row-main"><div class="row-title">{{ r.nama_reseller ?: '#' ~ r.id }}</div><div class="row-meta">{{ r.total_anggota }} anggota, Rp {{ omzet|number_format(0, ',', '.') }}</div><div class="dashboard-progress mt-1"><span class="{{ loop.first ? 'progress-gradient-success' : 'progress-gradient-accent' }}" style="width:{{ min(capaian, 100) }}%"></span></div></div>
+                            <strong class="small">{{ capaian }}%</strong>
+                        </div>
+                    {% else %}
+                        <div class="empty"><i class="ph ph-storefront" aria-hidden="true"></i><div class="empty-sub">Belum ada data reseller.</div></div>
+                    {% endfor %}
+                </div>
+            </section>
+        </div>
+        <div class="col-12 col-xl-4">
+            <section class="card dashboard-card" aria-labelledby="batches-title">
+                <header class="dashboard-card-header d-flex justify-content-between align-items-center gap-2"><div><h2 id="batches-title" class="dashboard-section-title">Batch kolektif</h2><div class="dashboard-section-subtitle">Input kolektif terakhir</div></div><a href="{{ path('app_kolektif_index') }}" class="btn btn-sm btn-secondary">Semua</a></header>
+                <div class="dashboard-list">
+                    {% for b in recentBatches %}
+                        <a href="{{ path('app_kolektif_detail', {id: b.id}) }}" class="dashboard-list-row text-decoration-none"><span class="dashboard-avatar"><i class="ph ph-stack" aria-hidden="true"></i></span><div class="row-main"><div class="row-title text-body">Batch #{{ b.id }}</div><div class="row-meta">{{ b.periode|format_periode }}, {{ b.reseller ? b.reseller.namaReseller : 'Tanpa reseller' }}</div></div><strong class="small text-body">Rp {{ b.totalNominal|number_format(0, ',', '.') }}</strong><i class="ph ph-caret-right text-muted" aria-hidden="true"></i></a>
+                    {% else %}<div class="empty"><i class="ph ph-stack" aria-hidden="true"></i><div class="empty-sub">Belum ada batch kolektif.</div></div>{% endfor %}
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-3">
+        <div class="col-12">
+            <section class="card dashboard-card" aria-labelledby="transactions-title">
+                <header class="dashboard-card-header d-flex justify-content-between align-items-center gap-2"><div><h2 id="transactions-title" class="dashboard-section-title">Transaksi terbaru</h2><div class="dashboard-section-subtitle">Aktivitas setoran paling baru</div></div><a href="{{ path('app_transaksi_index') }}" class="btn btn-sm btn-secondary">Lihat semua</a></header>
+                <div class="table-responsive"><table class="data-table dashboard-table" aria-label="Transaksi terbaru"><thead><tr><th>Anggota</th><th>Periode</th><th class="text-end">Nominal</th><th>Status</th></tr></thead><tbody>
+                    {% for t in recentTransactions %}
+                        <tr><td><div class="d-flex align-items-center gap-2"><span class="dashboard-avatar">{{ t.anggota ? t.anggota.namaAnggota|first|upper : '?' }}</span><div class="min-w-0"><div class="fw-semibold text-truncate">{{ t.anggota ? t.anggota.namaAnggota : '—' }}</div><div class="dashboard-section-subtitle">{{ t.anggota ? t.anggota.kodeAnggota : 'Tanpa anggota' }}</div></div></div></td><td><span class="badge">{{ t.bulan|format_periode }}</span></td><td class="text-end fw-semibold">Rp {{ t.nominal|number_format(0, ',', '.') }}</td><td>{% if t.approvalStatus|lower in ['approved', 'lunas'] %}<span class="badge badge-green">Lunas</span>{% else %}<span class="badge">{{ t.approvalStatus }}</span>{% endif %}</td></tr>
+                    {% else %}<tr><td colspan="4"><div class="empty"><i class="ph ph-inbox" aria-hidden="true"></i><div class="empty-sub">Belum ada transaksi.</div></td></tr>{% endfor %}
+                </tbody></table></div>
+            </section>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-12 col-xl-6">
+            <section class="card dashboard-card" aria-labelledby="lunas-title">
+                <header class="dashboard-card-header d-flex justify-content-between align-items-center gap-2">
+                    <div>
+                        <h2 id="lunas-title" class="dashboard-section-title d-flex align-items-center gap-2">
+                            <span>Anggota sudah lunas</span>
+                            <span class="badge badge-green fs-xs fw-semibold">{{ anggotaLunas }} lunas</span>
+                        </h2>
+                        <div class="dashboard-section-subtitle">Daftar anggota yang telah memenuhi 100% target simpanan</div>
+                    </div>
+                    <a href="{{ path('app_laporan_transaksi', {status_bayar: 'lunas'}) }}" class="btn btn-sm btn-secondary">Lihat di laporan</a>
+                </header>
+                <div class="table-responsive">
+                    <table class="data-table dashboard-table" aria-label="Anggota sudah lunas">
+                        <thead>
+                            <tr>
+                                <th>Anggota</th>
+                                <th>Reseller</th>
+                                <th>Paket</th>
+                                <th class="text-end">Total Setor</th>
+                                <th class="text-center">Status</th>
+                                <th class="text-center">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for ln in topLunas %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span class="dashboard-avatar text-success bg-success-subtle">{{ ln.nama_anggota|first|upper }}</span>
+                                            <div class="min-w-0">
+                                                <div class="fw-semibold text-truncate">{{ ln.nama_anggota }}</div>
+                                                <div class="dashboard-section-subtitle font-monospace">{{ ln.kode_anggota }}</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td><span class="badge">{{ ln.nama_reseller ?: '—' }}</span></td>
+                                    <td><span class="small text-truncate d-inline-block" style="max-width:130px;">{{ ln.nama_kategori ?: '—' }}</span></td>
+                                    <td class="text-end text-success fw-bold">Rp {{ ln.total_bayar|number_format(0, ',', '.') }}</td>
+                                    <td class="text-center"><span class="badge badge-green"><i class="ph ph-check-circle me-1" aria-hidden="true"></i>Lunas</span></td>
+                                    <td class="text-center">
+                                        <a href="{{ path('app_anggota_detail', {id: ln.id}) }}" class="btn btn-xs btn-secondary" title="Detail Anggota">
+                                            <i class="ph ph-arrow-square-out me-1" aria-hidden="true"></i> Detail
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% else %}
+                                <tr>
+                                    <td colspan="6">
+                                        <div class="empty py-3">
+                                            <i class="ph ph-hourglass text-muted" aria-hidden="true"></i>
+                                            <div class="empty-sub">Belum ada anggota yang mencapai target lunas.</div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+
+        <div class="col-12 col-xl-6">
+            <section class="card dashboard-card" aria-labelledby="tunggakan-title">
+                <header class="dashboard-card-header d-flex justify-content-between align-items-center gap-2">
+                    <div>
+                        <h2 id="tunggakan-title" class="dashboard-section-title d-flex align-items-center gap-2">
+                            <span>Tunggakan target tertinggi</span>
+                            <span class="badge badge-amber fs-xs fw-semibold">{{ anggotaBelumLunas }} belum lunas</span>
+                        </h2>
+                        <div class="dashboard-section-subtitle">Daftar anggota aktif dengan sisa kewajiban terbesar</div>
+                    </div>
+                    <a href="{{ path('app_laporan_transaksi', {status_bayar: 'belum_lunas'}) }}" class="btn btn-sm btn-secondary">Lihat di laporan</a>
+                </header>
+                <div class="table-responsive">
+                    <table class="data-table dashboard-table" aria-label="Tunggakan target tertinggi">
+                        <thead>
+                            <tr>
+                                <th>Anggota</th>
+                                <th>Reseller</th>
+                                <th>Paket</th>
+                                <th class="text-end">Sisa Target</th>
+                                <th class="text-center">Status</th>
+                                <th class="text-center">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for tg in topTunggakan %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span class="dashboard-avatar text-danger bg-danger-subtle">{{ tg.nama_anggota|first|upper }}</span>
+                                            <div class="min-w-0">
+                                                <div class="fw-semibold text-truncate">{{ tg.nama_anggota }}</div>
+                                                <div class="dashboard-section-subtitle font-monospace">{{ tg.kode_anggota }}</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td><span class="badge">{{ tg.nama_reseller ?: '—' }}</span></td>
+                                    <td><span class="small text-truncate d-inline-block" style="max-width:130px;">{{ tg.nama_kategori ?: '—' }}</span></td>
+                                    <td class="text-end text-danger fw-bold">Rp {{ tg.sisa|number_format(0, ',', '.') }}</td>
+                                    <td class="text-center"><span class="badge badge-amber"><i class="ph ph-hourglass me-1" aria-hidden="true"></i>Belum Lunas</span></td>
+                                    <td class="text-center">
+                                        <a href="{{ path('app_anggota_detail', {id: tg.id}) }}" class="btn btn-xs btn-secondary" title="Detail Anggota">
+                                            <i class="ph ph-arrow-square-out me-1" aria-hidden="true"></i> Detail
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% else %}
+                                <tr>
+                                    <td colspan="6">
+                                        <div class="empty py-3">
+                                            <i class="ph ph-check-circle text-success" aria-hidden="true"></i>
+                                            <div class="empty-sub">Luar biasa! Tidak ada anggota yang memiliki tunggakan saat ini.</div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+{% if monthlyTrend|length %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const canvas = document.getElementById('trendChart');
+    if (!canvas || typeof Chart === 'undefined') return;
+
+    const allPoints = {{ monthlyTrend|json_encode|raw }};
+    const totalTarget = {{ totalTarget|json_encode|raw }} || 0;
+    let currentPeriod = 12;
+
+    const colors = () => {
+        const cs = getComputedStyle(document.documentElement);
+        const read = name => cs.getPropertyValue(name).trim();
+        return { grid: read('--border'), text: read('--text-3'), accent: read('--accent'), success: read('--success') };
+    };
+
+    const fmtShort = (v) => {
+        if (v >= 1000000000) return (v / 1000000000).toFixed(1).replace('.0', '') + ' M';
+        if (v >= 1000000) return (v / 1000000).toFixed(1).replace('.0', '') + ' jt';
+        if (v >= 1000) return (v / 1000).toFixed(0) + ' rb';
+        return v.toLocaleString('id-ID');
+    };
+
+    const fmtRp = (v) => 'Rp ' + (v || 0).toLocaleString('id-ID');
+
+    function calcStats(points) {
+        const totals = points.map(p => Number(p.total || 0));
+        const total = totals.reduce((a, b) => a + b, 0);
+        const avg = totals.length > 0 ? total / totals.length : 0;
+        const best = totals.length > 0 ? Math.max(...totals) : 0;
+        const worst = totals.length > 0 ? Math.min(...totals) : 0;
+        return { total, avg: Math.round(avg), best, worst, monthlyTarget: points.length > 0 ? totalTarget / points.length : 0 };
+    }
+
+    function updateStatsDisplay(stats) {
+        document.getElementById('statTotal').textContent = fmtRp(stats.total);
+        document.getElementById('statAvg').textContent = fmtRp(stats.avg);
+        document.getElementById('statBest').textContent = fmtRp(stats.best);
+        document.getElementById('statWorst').textContent = fmtRp(stats.worst);
+    }
+
+    function sliceData(period) {
+        if (period === 'all') return allPoints.slice();
+        const n = parseInt(period);
+        return allPoints.length > n ? allPoints.slice(-n) : allPoints.slice();
+    }
+
+    const ctx = canvas.getContext('2d');
+    const c = colors();
+    const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+    gradient.addColorStop(0, c.accent);
+    gradient.addColorStop(1, c.accent + '66');
+
+    const initPoints = sliceData(12);
+    const initStats = calcStats(initPoints);
+    updateStatsDisplay(initStats);
+
+    const chart = new Chart(canvas, {
+        type: 'bar',
+        data: {
+            labels: initPoints.map(p => p.bulan || ''),
+            datasets: [
+                {
+                    label: 'Total Setoran',
+                    data: initPoints.map(p => Number(p.total || 0)),
+                    backgroundColor: gradient,
+                    borderRadius: 8,
+                    borderSkipped: false,
+                    maxBarThickness: 42,
+                    order: 2,
+                },
+                {
+                    label: 'Target/bulan',
+                    data: initPoints.map(() => initStats.monthlyTarget),
+                    type: 'line',
+                    borderColor: c.success,
+                    borderDash: [6, 4],
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    pointHoverRadius: 4,
+                    fill: false,
+                    yAxisID: 'y',
+                    order: 1,
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { intersect: false, mode: 'index' },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const val = context.parsed.y;
+                            return context.dataset.label + ': ' + fmtRp(val);
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: { display: false },
+                    ticks: { color: c.text, maxRotation: 45, minRotation: 0 }
+                },
+                y: {
+                    beginAtZero: true,
+                    grid: { color: c.grid },
+                    ticks: { color: c.text, callback: value => fmtShort(value) }
+                }
+            }
+        }
+    });
+
+    function updateChart(period) {
+        const points = sliceData(period);
+        const stats = calcStats(points);
+        const newGradient = ctx.createLinearGradient(0, 0, 0, canvas.parentElement.clientHeight || 300);
+        const ac = colors().accent;
+        newGradient.addColorStop(0, ac);
+        newGradient.addColorStop(1, ac + '66');
+
+        chart.data.labels = points.map(p => p.bulan || '');
+        chart.data.datasets[0].data = points.map(p => Number(p.total || 0));
+        chart.data.datasets[0].backgroundColor = newGradient;
+        chart.data.datasets[1].data = points.map(() => stats.monthlyTarget);
+        chart.data.datasets[1].borderColor = colors().success;
+        chart.options.scales.x.ticks.color = colors().text;
+        chart.options.scales.y.ticks.color = colors().text;
+        chart.options.scales.y.grid.color = colors().grid;
+        chart.update();
+        updateStatsDisplay(stats);
+    }
+
+    document.querySelectorAll('.chart-period-toggle button').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.chart-period-toggle button').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            currentPeriod = this.dataset.period;
+            updateChart(currentPeriod);
+        });
+    });
+
+    new MutationObserver(() => {
+        const theme = colors();
+        const g = ctx.createLinearGradient(0, 0, 0, canvas.parentElement.clientHeight || 300);
+        g.addColorStop(0, theme.accent);
+        g.addColorStop(1, theme.accent + '66');
+        chart.data.datasets[0].backgroundColor = g;
+        chart.data.datasets[1].borderColor = theme.success;
+        chart.options.scales.x.ticks.color = theme.text;
+        chart.options.scales.y.ticks.color = theme.text;
+        chart.options.scales.y.grid.color = theme.grid;
+        chart.update('none');
+    }).observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+});
+</script>
+{% endif %}
+{% endblock %}

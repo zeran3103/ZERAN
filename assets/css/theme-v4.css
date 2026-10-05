@@ -1994,3 +1994,20 @@ html.dark body .dashboard-stat:hover {
     box-shadow: 0 8px 28px -2px rgba(0, 0, 0, 0.7), 0 0 15px rgba(212, 165, 116, 0.15) !important;
 }
 
+/* ── DASHBOARD GRID: 1 ROW LAYOUT ── */
+.dashboard-grid {
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 12px;
+}
+@media (max-width: 991px) {
+    .dashboard-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+}
+@media (max-width: 575px) {
+    .dashboard-grid {
+        grid-template-columns: 1fr !important;
+    }
+}
+
