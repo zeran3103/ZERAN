@@ -2104,9 +2104,8 @@ html.dark .stat-3d-badge {
 .dashboard-grid {
     display: grid !important;
     grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 12px !important;
     perspective: 1200px;
-}
-    gap: 12px;
 }
 @media (max-width: 991px) {
     .dashboard-grid {
@@ -2118,4 +2117,65 @@ html.dark .stat-3d-badge {
         grid-template-columns: 1fr !important;
     }
 }
+
+/* FinTrack Component Styling (Preserving existing Teal & Gold palettes) */
+.stat-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: var(--radius-pill);
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    background: rgba(255, 255, 255, 0.16);
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    color: #ffffff;
+    width: fit-content;
+}
+html.dark .stat-pill {
+    background: rgba(212, 165, 116, 0.15);
+    border-color: rgba(212, 165, 116, 0.35);
+    color: #e2c199;
+}
+
+.goals-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+.smart-tip-card {
+    background: linear-gradient(135deg, rgba(27, 67, 50, 0.08) 0%, rgba(45, 90, 74, 0.14) 100%);
+    border: 1px solid rgba(27, 67, 50, 0.22);
+    border-radius: var(--radius-lg);
+    position: relative;
+    overflow: hidden;
+}
+html.dark .smart-tip-card {
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.95) 100%);
+    border: 1px solid rgba(212, 165, 116, 0.30);
+    border-left: 3px solid #d4a574;
+}
+.smart-tip-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--accent);
+    color: var(--accent-fg);
+    font-size: 18px;
+    flex-shrink: 0;
+}
+html.dark .smart-tip-icon {
+    background: rgba(212, 165, 116, 0.2);
+    color: #d4a574;
+    border: 1px solid rgba(212, 165, 116, 0.4);
+}
+
 

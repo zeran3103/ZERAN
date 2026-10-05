@@ -182,11 +182,18 @@
     <section class="card dashboard-hero mb-3" aria-labelledby="dashboard-title">
         <div class="p-4 page-hd-row align-items-center">
             <div>
-                <h1 id="dashboard-title" class="mb-1 fs-2xl fw-bold">Selamat datang kembali</h1>
-                <p class="text-muted mb-0">Pantau target, setoran, dan aktivitas terbaru dari satu tempat.</p>
+                <div class="d-flex align-items-center gap-2 mb-1">
+                    <span class="badge badge-green fs-xs fw-semibold"><i class="ph ph-shield-check me-1" aria-hidden="true"></i>Sistem Aktif</span>
+                    <span class="text-muted fs-xs">•</span>
+                    <span class="text-muted fs-xs">{{ "now"|date("d M Y") }}</span>
+                </div>
+                <h1 id="dashboard-title" class="mb-1 fs-2xl fw-bold">
+                    Selamat {{ "now"|date("H") < 11 ? "pagi" : ("now"|date("H") < 15 ? "siang" : ("now"|date("H") < 18 ? "sore" : "malam")) }}{{ app.user ? ', ' ~ (app.user.namaLengkap ?: app.user.username) : '' }}!
+                </h1>
+                <p class="text-muted mb-0">Pantau arus kas, target tabungan, dan ringkasan aktivitas keuangan Zeran Parcel hari ini.</p>
             </div>
             <div class="d-flex gap-2 flex-wrap">
-                <a href="{{ path('app_kolektif_input') }}" class="btn btn-outline-light"><i class="ph ph-play-circle me-1" aria-hidden="true"></i> Input kolektif</a>
+                <a href="{{ path('app_kolektif_input') }}" class="btn btn-outline-light"><i class="ph ph-plus-circle me-1" aria-hidden="true"></i> Input kolektif</a>
                 <a href="{{ path('app_laporan_transaksi') }}" class="btn btn-outline-light"><i class="ph ph-chart-bar me-1" aria-hidden="true"></i> Buka laporan</a>
             </div>
         </div>
@@ -194,45 +201,64 @@
 
     <section class="dashboard-grid mb-3" aria-label="Ringkasan utama">
         <article class="card dashboard-stat p-3 s-accent">
-            <span class="stat-label">Total target</span>
+            <div class="d-flex align-items-center justify-content-between">
+                <span class="stat-label">Total target</span>
+                <span class="stat-pill"><i class="ph ph-check-circle" aria-hidden="true"></i> Kas Penuh</span>
+            </div>
             <div class="stat-3d-badge anim-3d-vault" title="Total target kas"><i class="ph ph-vault"></i></div>
-            <div>
+            <div class="mt-2">
                 <div class="stat-number">Rp {{ totalTarget|number_format(0, ',', '.') }}</div>
-                <div class="stat-caption mt-1">{{ totalAnggota|number_format(0, ',', '.') }} anggota, {{ totalKategori }} paket</div>
+                <div class="stat-caption mt-1">{{ totalAnggota|number_format(0, ',', '.') }} anggota • {{ totalKategori }} paket aktif</div>
             </div>
         </article>
         <article class="card dashboard-stat p-3 s-success">
-            <span class="stat-label">Sudah terkumpul</span>
+            <div class="d-flex align-items-center justify-content-between">
+                <span class="stat-label">Sudah terkumpul</span>
+                <span class="stat-pill"><i class="ph ph-trend-up" aria-hidden="true"></i> {{ persenCapaian }}%</span>
+            </div>
             <div class="stat-3d-badge anim-3d-coins" title="Sudah terkumpul / setoran masuk"><i class="ph ph-hand-coins"></i></div>
-            <div>
+            <div class="mt-2">
                 <div class="stat-number text-success">Rp {{ totalSudahBayar|number_format(0, ',', '.') }}</div>
                 <div class="dashboard-capaian-bar mt-2" role="progressbar" aria-label="Capaian target" aria-valuenow="{{ min(persenCapaian, 100) }}" aria-valuemin="0" aria-valuemax="100"><span class="progress-gradient-success" style="width:{{ min(persenCapaian, 100) }}%"></span></div>
-                <div class="stat-caption mt-1">{{ persenCapaian }}% capaian, {{ anggotaLunas|number_format(0, ',', '.') }} anggota lunas</div>
+                <div class="stat-caption mt-1">{{ anggotaLunas|number_format(0, ',', '.') }} dari {{ totalAnggota|number_format(0, ',', '.') }} anggota lunas</div>
             </div>
         </article>
         <article class="card dashboard-stat p-3 s-warning">
-            <span class="stat-label">Sisa target</span>
+            <div class="d-flex align-items-center justify-content-between">
+                <span class="stat-label">Sisa target</span>
+                <span class="stat-pill"><i class="ph ph-hourglass-medium" aria-hidden="true"></i> {{ 100 - min(persenCapaian, 100) }}% sisa</span>
+            </div>
             <div class="stat-3d-badge anim-3d-hourglass" title="Sisa tagihan berjalan"><i class="ph ph-hourglass-medium"></i></div>
-            <div>
+            <div class="mt-2">
                 <div class="stat-number text-warning">Rp {{ sisaTarget|number_format(0, ',', '.') }}</div>
-                <div class="stat-caption mt-1">{{ anggotaBelumLunas|number_format(0, ',', '.') }} anggota belum lunas</div>
+                <div class="stat-caption mt-1">{{ anggotaBelumLunas|number_format(0, ',', '.') }} anggota dalam proses</div>
             </div>
         </article>
         <article class="card dashboard-stat p-3 s-info">
-            <span class="stat-label">Anggota aktif</span>
+            <div class="d-flex align-items-center justify-content-between">
+                <span class="stat-label">Anggota aktif</span>
+                <span class="stat-pill"><i class="ph ph-users" aria-hidden="true"></i> {{ totalReseller }} Reseller</span>
+            </div>
             <div class="stat-3d-badge anim-3d-users" title="Kartu anggota aktif"><i class="ph ph-users-three"></i></div>
-            <div>
+            <div class="mt-2">
                 <div class="stat-number">{{ anggotaAktif|number_format(0, ',', '.') }}</div>
-                <div class="stat-caption mt-1">dari {{ totalAnggota|number_format(0, ',', '.') }} anggota, {{ totalReseller }} reseller</div>
+                <div class="stat-caption mt-1">{{ totalAnggota > 0 ? (anggotaAktif / totalAnggota * 100)|round : 100 }}% tingkat keaktifan</div>
             </div>
         </article>
     </section>
 
+    <!-- 8 : 4 GRID CORE SECTION (Spending Overview + Goals Progress & Smart Tip) -->
     <div class="row g-3 mb-3">
-        <div class="col-12">
+        <div class="col-12 col-xl-8">
             <section class="card dashboard-card" aria-labelledby="trend-title">
                 <header class="dashboard-card-header d-flex justify-content-between align-items-center gap-2 flex-wrap"><meta charset="utf-8">
-                    <div><h2 id="trend-title" class="dashboard-section-title">Tren setoran</h2><div class="dashboard-section-subtitle">Pergerakan nominal transaksi pada periode terakhir</div></div>
+                    <div>
+                        <h2 id="trend-title" class="dashboard-section-title d-flex align-items-center gap-2">
+                            <span>Tren setoran kas</span>
+                            <span class="badge badge-green fs-xs fw-semibold">Overview</span>
+                        </h2>
+                        <div class="dashboard-section-subtitle">Pergerakan arus kas setoran bulanan</div>
+                    </div>
                     <div class="chart-period-toggle" role="group" aria-label="Pilih periode">
                         <button type="button" data-period="6">6B</button>
                         <button type="button" data-period="12" class="active">12B</button>
@@ -244,7 +270,7 @@
                     {% if monthlyTrend|length %}
                         <div class="dashboard-chart"><canvas id="trendChart" aria-label="Grafik tren setoran bulanan"></canvas></div>
                         <div class="chart-stats" id="chartStats">
-                            <div class="chart-stat-item"><div class="chart-stat-value" id="statTotal">—</div><div class="chart-stat-label">Total</div></div>
+                            <div class="chart-stat-item"><div class="chart-stat-value" id="statTotal">—</div><div class="chart-stat-label">Total kas periode</div></div>
                             <div class="chart-stat-item"><div class="chart-stat-value" id="statAvg">—</div><div class="chart-stat-label">Rata-rata/bulan</div></div>
                             <div class="chart-stat-item"><div class="chart-stat-value text-success" id="statBest">—</div><div class="chart-stat-label">Bulan terbaik</div></div>
                             <div class="chart-stat-item"><div class="chart-stat-value text-danger" id="statWorst">—</div><div class="chart-stat-label">Bulan terendah</div></div>
@@ -255,13 +281,117 @@
                 </div>
             </section>
         </div>
+        <div class="col-12 col-xl-4 d-flex flex-column gap-3">
+            <!-- GOALS PROGRESS WIDGET -->
+            <section class="card dashboard-card p-3 goals-card" aria-labelledby="goals-title">
+                <header class="d-flex justify-content-between align-items-center mb-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="dashboard-avatar text-accent"><i class="ph ph-target fs-base" aria-hidden="true"></i></span>
+                        <div>
+                            <h2 id="goals-title" class="fs-base fw-bold mb-0">Goals Progress</h2>
+                            <div class="text-muted fs-xs">Target tabungan periode ini</div>
+                        </div>
+                    </div>
+                    <span class="badge badge-green fw-bold fs-xs">{{ persenCapaian }}%</span>
+                </header>
+                <div class="my-2">
+                    <div class="d-flex justify-content-between align-items-baseline mb-1">
+                        <span class="fs-xs text-muted">Terkumpul</span>
+                        <strong class="fs-sm font-monospace text-success">Rp {{ totalSudahBayar|number_format(0, ',', '.') }}</strong>
+                    </div>
+                    <div class="dashboard-capaian-bar my-1" role="progressbar" aria-valuenow="{{ min(persenCapaian, 100) }}" aria-valuemin="0" aria-valuemax="100">
+                        <span class="progress-gradient-success" style="width:{{ min(persenCapaian, 100) }}%"></span>
+                    </div>
+                    <div class="d-flex justify-content-between fs-xs text-muted mt-1">
+                        <span>Target: Rp {{ totalTarget|number_format(0, ',', '.') }}</span>
+                        <span>Sisa: Rp {{ sisaTarget|number_format(0, ',', '.') }}</span>
+                    </div>
+                </div>
+                <div class="pt-2 border-top d-flex justify-content-between text-muted fs-xs">
+                    <span><i class="ph ph-check me-1 text-success"></i><strong>{{ anggotaLunas }}</strong> Lunas</span>
+                    <span><i class="ph ph-clock me-1 text-warning"></i><strong>{{ anggotaBelumLunas }}</strong> Berjalan</span>
+                </div>
+            </section>
+
+            <!-- SMART TIP WIDGET -->
+            <section class="card p-3 smart-tip-card" aria-label="Smart tip keuangan">
+                <div class="d-flex gap-3 align-items-start">
+                    <div class="smart-tip-icon"><i class="ph ph-lightbulb"></i></div>
+                    <div class="min-w-0 flex-grow-1">
+                        <div class="d-flex align-items-center justify-content-between mb-1">
+                            <span class="fw-bold fs-xs text-uppercase tracking-wider">Smart Tip Kas</span>
+                            <span class="badge badge-amber fs-xs">Insight</span>
+                        </div>
+                        <p class="fs-xs mb-2 text-muted" style="line-height:1.55;">
+                            {% if persenCapaian >= 80 %}
+                                Pencapaian target telah melampaui 80%. Prioritaskan konfirmasi penagihan akhir anggota sisa bersama {{ totalReseller }} reseller aktif.
+                            {% elseif persenCapaian >= 50 %}
+                                Arus kas setoran berjalan optimal ({{ persenCapaian }}%). Lakukan input kolektif berkala sebelum batas penutupan periode kas.
+                            {% else %}
+                                Capaian setoran berada pada {{ persenCapaian }}%. Koordinasikan batch setoran massal per reseller untuk mempercepat pemenuhan target.
+                            {% endif %}
+                        </p>
+                        <a href="{{ path('app_laporan_transaksi') }}" class="btn btn-xs btn-outline-primary">
+                            <i class="ph ph-arrow-right me-1" aria-hidden="true"></i> Buka Rekap Keuangan
+                        </a>
+                    </div>
+                </div>
+            </section>
+        </div>
     </div>
 
+    <!-- LOWER SECTION: RECENT TRANSACTIONS + RESELLER & BATCHES -->
     <div class="row g-3 mb-3">
-        <div class="col-12 col-xl-8">
+        <div class="col-12 col-xl-7">
+            <section class="card dashboard-card" aria-labelledby="transactions-title">
+                <header class="dashboard-card-header d-flex justify-content-between align-items-center gap-2">
+                    <div>
+                        <h2 id="transactions-title" class="dashboard-section-title">Transaksi terbaru</h2>
+                        <div class="dashboard-section-subtitle">Aktivitas setoran masuk paling baru</div>
+                    </div>
+                    <a href="{{ path('app_transaksi_index') }}" class="btn btn-sm btn-secondary">Lihat semua</a>
+                </header>
+                <div class="table-responsive">
+                    <table class="data-table dashboard-table" aria-label="Transaksi terbaru">
+                        <thead>
+                            <tr>
+                                <th>Anggota</th>
+                                <th>Periode</th>
+                                <th class="text-end">Nominal</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for t in recentTransactions %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span class="dashboard-avatar">{{ t.anggota ? t.anggota.namaAnggota|first|upper : '?' }}</span>
+                                            <div class="min-w-0">
+                                                <div class="fw-semibold text-truncate">{{ t.anggota ? t.anggota.namaAnggota : '—' }}</div>
+                                                <div class="dashboard-section-subtitle font-monospace">{{ t.anggota ? t.anggota.kodeAnggota : 'Tanpa kode' }}</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td><span class="badge">{{ t.bulan|format_periode }}</span></td>
+                                    <td class="text-end fw-semibold font-monospace text-success">Rp {{ t.nominal|number_format(0, ',', '.') }}</td>
+                                    <td>{% if t.approvalStatus|lower in ['approved', 'lunas'] %}<span class="badge badge-green">Lunas</span>{% else %}<span class="badge">{{ t.approvalStatus }}</span>{% endif %}</td>
+                                </tr>
+                            {% else %}
+                                <tr><td colspan="4"><div class="empty"><i class="ph ph-inbox" aria-hidden="true"></i><div class="empty-sub">Belum ada transaksi.</div></div></td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+        <div class="col-12 col-xl-5">
             <section class="card dashboard-card" aria-labelledby="reseller-title">
                 <header class="dashboard-card-header d-flex justify-content-between align-items-start gap-2">
-                    <div><h2 id="reseller-title" class="dashboard-section-title">Performa reseller</h2><div class="dashboard-section-subtitle">Peringkat berdasarkan omzet</div></div>
+                    <div>
+                        <h2 id="reseller-title" class="dashboard-section-title">Performa reseller</h2>
+                        <div class="dashboard-section-subtitle">Peringkat reseller berdasarkan omzet</div>
+                    </div>
                     <a href="{{ path('app_reseller_index') }}" class="btn btn-sm btn-secondary">Semua</a>
                 </header>
                 <div class="dashboard-list">
@@ -271,36 +401,17 @@
                         {% set capaian = target > 0 ? (omzet / target * 100)|round(1) : 0 %}
                         <div class="dashboard-list-row">
                             <span class="dashboard-rank {{ loop.first ? 'is-top' : '' }}">{{ loop.index }}</span>
-                            <div class="row-main"><div class="row-title">{{ r.nama_reseller ?: '#' ~ r.id }}</div><div class="row-meta">{{ r.total_anggota }} anggota, Rp {{ omzet|number_format(0, ',', '.') }}</div><div class="dashboard-progress mt-1"><span class="{{ loop.first ? 'progress-gradient-success' : 'progress-gradient-accent' }}" style="width:{{ min(capaian, 100) }}%"></span></div></div>
-                            <strong class="small">{{ capaian }}%</strong>
+                            <div class="row-main">
+                                <div class="row-title">{{ r.nama_reseller ?: '#' ~ r.id }}</div>
+                                <div class="row-meta">{{ r.total_anggota }} anggota, Rp {{ omzet|number_format(0, ',', '.') }}</div>
+                                <div class="dashboard-progress mt-1"><span class="{{ loop.first ? 'progress-gradient-success' : 'progress-gradient-accent' }}" style="width:{{ min(capaian, 100) }}%"></span></div>
+                            </div>
+                            <strong class="small font-monospace">{{ capaian }}%</strong>
                         </div>
                     {% else %}
                         <div class="empty"><i class="ph ph-storefront" aria-hidden="true"></i><div class="empty-sub">Belum ada data reseller.</div></div>
                     {% endfor %}
                 </div>
-            </section>
-        </div>
-        <div class="col-12 col-xl-4">
-            <section class="card dashboard-card" aria-labelledby="batches-title">
-                <header class="dashboard-card-header d-flex justify-content-between align-items-center gap-2"><div><h2 id="batches-title" class="dashboard-section-title">Batch kolektif</h2><div class="dashboard-section-subtitle">Input kolektif terakhir</div></div><a href="{{ path('app_kolektif_index') }}" class="btn btn-sm btn-secondary">Semua</a></header>
-                <div class="dashboard-list">
-                    {% for b in recentBatches %}
-                        <a href="{{ path('app_kolektif_detail', {id: b.id}) }}" class="dashboard-list-row text-decoration-none"><span class="dashboard-avatar"><i class="ph ph-stack" aria-hidden="true"></i></span><div class="row-main"><div class="row-title text-body">Batch #{{ b.id }}</div><div class="row-meta">{{ b.periode|format_periode }}, {{ b.reseller ? b.reseller.namaReseller : 'Tanpa reseller' }}</div></div><strong class="small text-body">Rp {{ b.totalNominal|number_format(0, ',', '.') }}</strong><i class="ph ph-caret-right text-muted" aria-hidden="true"></i></a>
-                    {% else %}<div class="empty"><i class="ph ph-stack" aria-hidden="true"></i><div class="empty-sub">Belum ada batch kolektif.</div></div>{% endfor %}
-                </div>
-            </section>
-        </div>
-    </div>
-
-    <div class="row g-3 mb-3">
-        <div class="col-12">
-            <section class="card dashboard-card" aria-labelledby="transactions-title">
-                <header class="dashboard-card-header d-flex justify-content-between align-items-center gap-2"><div><h2 id="transactions-title" class="dashboard-section-title">Transaksi terbaru</h2><div class="dashboard-section-subtitle">Aktivitas setoran paling baru</div></div><a href="{{ path('app_transaksi_index') }}" class="btn btn-sm btn-secondary">Lihat semua</a></header>
-                <div class="table-responsive"><table class="data-table dashboard-table" aria-label="Transaksi terbaru"><thead><tr><th>Anggota</th><th>Periode</th><th class="text-end">Nominal</th><th>Status</th></tr></thead><tbody>
-                    {% for t in recentTransactions %}
-                        <tr><td><div class="d-flex align-items-center gap-2"><span class="dashboard-avatar">{{ t.anggota ? t.anggota.namaAnggota|first|upper : '?' }}</span><div class="min-w-0"><div class="fw-semibold text-truncate">{{ t.anggota ? t.anggota.namaAnggota : '—' }}</div><div class="dashboard-section-subtitle">{{ t.anggota ? t.anggota.kodeAnggota : 'Tanpa anggota' }}</div></div></div></td><td><span class="badge">{{ t.bulan|format_periode }}</span></td><td class="text-end fw-semibold">Rp {{ t.nominal|number_format(0, ',', '.') }}</td><td>{% if t.approvalStatus|lower in ['approved', 'lunas'] %}<span class="badge badge-green">Lunas</span>{% else %}<span class="badge">{{ t.approvalStatus }}</span>{% endif %}</td></tr>
-                    {% else %}<tr><td colspan="4"><div class="empty"><i class="ph ph-inbox" aria-hidden="true"></i><div class="empty-sub">Belum ada transaksi.</div></td></tr>{% endfor %}
-                </tbody></table></div>
             </section>
         </div>
     </div>
