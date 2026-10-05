@@ -2079,7 +2079,7 @@ html.dark body .dashboard-stat:hover {
     font-size: 20px;
     color: #ffffff;
     flex-shrink: 0;
-    transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), box-shadow 0.3s ease;
+    transition: filter 0.35s ease, box-shadow 0.35s ease;
     will-change: transform;
     z-index: 2;
 }
@@ -2090,25 +2090,26 @@ html.dark .stat-3d-badge {
     box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(212, 165, 116, 0.4);
 }
 .dashboard-stat:hover .stat-3d-badge {
-    transform: translateY(-2px) scale(1.08) !important;
+    filter: brightness(1.18);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.5);
 }
 
 /* 3D Continuous Floating Keyframes - Smooth, Gentle, High Performance */
 @keyframes anim3dVault {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-3px); }
+    0%, 100% { transform: translate3d(0, 0, 0); }
+    50% { transform: translate3d(0, -3px, 0); }
 }
 @keyframes anim3dCoins {
-    0%, 100% { transform: translateY(0) rotate(0deg); }
-    50% { transform: translateY(-3px) rotate(4deg); }
+    0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg); }
+    50% { transform: translate3d(0, -3px, 0) rotate(4deg); }
 }
 @keyframes anim3dHourglass {
-    0%, 100% { transform: translateY(0) rotate(0deg); }
-    50% { transform: translateY(-3px) rotate(-4deg); }
+    0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg); }
+    50% { transform: translate3d(0, -3px, 0) rotate(-4deg); }
 }
 @keyframes anim3dUsers {
-    0%, 100% { transform: translateY(0) scale(1); }
-    50% { transform: translateY(-2px) scale(1.05); }
+    0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+    50% { transform: translate3d(0, -2px, 0) scale(1.05); }
 }
 
 .anim-3d-vault { animation: anim3dVault 3.6s ease-in-out infinite; }
@@ -2121,7 +2122,7 @@ html.dark .stat-3d-badge {
     display: grid !important;
     grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
     gap: 12px !important;
-    perspective: 1200px;
+}
 }
 @media (max-width: 991px) {
     .dashboard-grid {
@@ -2163,13 +2164,30 @@ html.dark .stat-pill {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
+    flex: 1 1 auto;
 }
 .smart-tip-card {
     background: linear-gradient(135deg, rgba(27, 67, 50, 0.08) 0%, rgba(45, 90, 74, 0.14) 100%);
     border: 1px solid rgba(27, 67, 50, 0.22);
     border-radius: var(--radius-lg);
     position: relative;
-    overflow: hidden;
+    overflow: visible;
+    flex-shrink: 0;
+    min-height: fit-content;
+    padding: 16px 18px !important;
+}
+.smart-tip-card .btn,
+.smart-tip-card .btn-outline-primary {
+    padding: 5px 12px !important;
+    font-size: 11.5px !important;
+    font-weight: 600 !important;
+    border-radius: 6px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    margin-top: 6px !important;
+    white-space: nowrap !important;
+    width: fit-content !important;
 }
 html.dark .smart-tip-card {
     background: linear-gradient(135deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.95) 100%);
