@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="id" x-data="appShell()" :class="{ 'dark': dark }" class="h-full">
+<head><meta charset="utf-8">
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#4a6cf7">
+    <meta name="description" content="Zeran Parcel — administrasi arisan dan tabungan">
+    <title>{% block title %}Zeran Parcel{% endblock %}</title>
+
+    <link href="{{ asset('assets/css/bootstrap.min.css') }}" rel="stylesheet">
+    <link href="{{ asset('assets/icons/phosphor.css') }}?v=2" rel="stylesheet">
+    <link href="{{ asset('assets/css/fonts.css') }}" rel="stylesheet">
+    <link href="{{ asset('assets/css/theme-v4.css') }}?v=navy-20261005b" rel="stylesheet">
+    <script>
+        (function() {
+            const sysTheme = '{{ current_theme() }}';
+            const local = localStorage.getItem('theme');
+            const dark = local !== null ? local === 'dark' : sysTheme === 'dark';
+            if (dark) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        })();
+    </script>
+    <script src="{{ asset('assets/js/chart.umd.min.js') }}"></script>
+    <script defer src="{{ asset('assets/js/alpine.min.js') }}"></script>
+    <script>
+        document.addEventListener('alpine:init', () => {
+            const sysTheme = '{{ current_theme() }}';
+            const local = localStorage.getItem('theme');
+            const isDark = local !== null ? local === 'dark' : sysTheme === 'dark';
+            Alpine.store('theme', {
+                dark: isDark,
+                toggle() {
+                    this.dark = !this.dark;
+                    localStorage.setItem('theme', this.dark ? 'dark' : 'light');
+                    document.documentElement.classList.toggle('dark', this.dark);
+                }
+            });
+        });
+    </script>
+
+    {% block stylesheets %}{% endblock %}
+</head>
+<body x-init="init()">
+
+<a class="visually-hidden-focusable" href="#main-content">Lewatke ke konten utama</a>
+<div class="overlay" :class="{ active: mob }" @click="mob=false" aria-hidden="true"></div>
+
+<-- SIDEBAR -->
+<nav id="sidebar" :class="{ collapsed: col, open: mob }" aria-label="Navigasi utama">
+
+    <a href="{{ path('app_dashboard') }}" class="sb-logo">
+        <div class="sb-logo-icon"><i class="ph ph-package"></i></div>
+        <span class="sb-logo-text">Zeran Parcel</span>
+    </a>
+
+    <div class="sb-section">
+        <a href="{{ path('app_dashboard') }}"
+           class="sb-link {% if app.request.attributes.get('_route') == 'app_dashboard' %}active{% endif %}">
+            <i class="ph ph-grid-four"></i>
+            <span class="sb-link-label">Dashboard</span>
+        </a>
+
+        <div class="sb-label mt-2">Keuangaan</div>
+        <a href="{{ path('app_kolektif_input') }}"
+           class="sb-link {% if app.request.attributes.get('_route') == 'app_kolektif_input' %}active{% endif %}">
+            <i class="ph ph-pencil-simple"></i>
+            <span class="sb-link-label">Input Kolektif</span>
+        </a>
+        <a href="{{ path('app_transaksi_index') }}"
+           class="sb-link {% if 'app_transaksi' in app.request.attributes.get('_route') %}active{% endif %}">
+            <i class="ph ph-arrows-left-right"></i>
+            <span class="sb-link-label">Transaksi</span>
+        </a>
+        <a href="{{ path('app_kolektif_index') }}"
+           class="sb-link {% if app.request.attributes.get('_route') in ['app_kolektif_index','app_kolektif_detail'] %}active{% endif %}">
+            <i class="ph ph-stack"></i>
+            <span class="sb-link-label">Batch Kolektif</span>
+        </a>
+        <a href="{{ path('app_setoran_tujuan_index') }}"
+           class="sb-link {% if 'app_setoran_tujuan' in app.request.attributes.get('_route') %}active{% endif %}">
+            <i class="ph ph-bank"></i>
+            <span class="sb-link-label">Setoran &amp; Komisi</span>
+        </a>
+        <a href="{{ path('app_proses_rekap_index') }}"
+           class="sb-link {% if 'app_proses_rekap' in app.request.attributes.get('_route') %}active{% endif %}">
+            <i class="ph ph-clipboard-text"></i>
+            <span class="sb-link-label">Proses Rekap</span>
+        </a>
+        <a href="{{ path('app_laporan_transaki') }}"
+           class="sb-link {% if 'app_laporan_transaski' in app.request.attributes.get('_route') %}active{% endif %}">
+            <i class="ph ph-chart-bar"></i>
+            <span class="sb-link-label">Laporan Transaki</span>
+        </a>
+        <a href="{{ path('app_laporan_komisi') }}"
+           class="sb-link {% if 'app_laporan_komisi' in app.request.attributes.get('_route') %}active{% endif %}">
+            <i class="ph ph-percent"></i>
+            <span class="sb-link-label">Komisi Reseller</span>
+        </a>
+
+        <div class="sb-label mt-2">Data</div>
+        <a href="{{ path('app_anggota_index') }}"
+           class="sb-link {% if 'app_anggota' in app.request.attributes.get('_route') %}active{% endif %}">
+            <i class="ph ph-users"></i>
+            <span class="sb-link-label">Anggota</span>
+        </a>
+        <a href="{{ path('app_reseller_index') }}"
+           class="sb-link {% if 'app_reseller' in app.request.attributes.get('_route') %}active{% endif %}">
+            <i class="ph ph-storefront"></i>
+            <span class="sb-link-label">Reseller</span>
+        </a>
+        <a href="{{ path('app_kategori_index') }}"
+           class="sb-link {% if 'app_kategory' in app.request.attributes.get('_route') %}active{% endif %}">
+            <i class="ph ph-tag"></i>
+            <span class="sb-link-label">Kategori</span>
+        </a>
+
+        <div class="sb-label mt-2">Sistem</div>
+        <a href="{{ path('app_audit_index') }}"
+           class="sb-link {% if 'app_audit' in app.request.attributes.get('_route') %}active{% endif %}">
+            <i class="ph ph-shield"></i>
+            <span class="sb-link-label">Audit Log</span>
+        </a>
+        <a href="{{ path('app_closing_index') }}"
+           class="sb-link {% if 'app_closing' in app.request.attributes.get('_route') %}active{% endif %}">
+            <i class="ph ph-calendar-check"></i>
+            <span class="sb-link-label">Closing & Lock</span>
+        </a>
+        <a href="{{ path('app_backup_restore') }}"
+           class="sb-link {% if 'app_backup' in app.request.attributes.get('_route') %}active{% endif %}">
+            <i class="ph ph-hard-drives"></i>
+            <span class="sb-link-label">Backup & Restore</span>
+        </a>
+        <a href="{{ path('app_settings') }}"
+           class="sb-link {% if 'app_settings' in app.request.attributes.get('_route') %}active{% endif %}">
+            <i class="ph ph-gear"></i>
+            <span class="sb-link-label">Pengaturan</span>
+        </a>
+    </div>
+
+    <div class="sb-footer">
+        <button @click="toggleCol()" class="sb-link w-100 border-0 bg-transparent text-start"
+                :aria-label="col ? 'Buka label navigasi' : 'Ciutkan navigasi'">
+            <i class="ph" :class="col ? 'ph-sidebar-simple' : 'ph-sidebar-simple'"></i>
+            <span class="sb-link-label small text-muted">Collapse</span>
+        </button>
+    </div>
+</nav>
+
+{% set user = current_user() %}
+
+<!-- MAIN -->
+<div id="main" :class="{ expanded: col }">
+
+    <!-- Topbar -->
+    <header class="topbar">
+        <div class="topbar-left">
+            <button class="icon-btn d-md-none border-0 bg-transparent" @click="mob=!mob"
+                    aria-label="Buka navigasi">
+                <i class="ph ph-list"></i>
+            </button>
+            <div class="global-search" id="globalSearch">
+                <i class="ph ph-magnifying-glass"></i>
+                <input type="search" id="gsInput" placeholder="Cari anggota…" aria-label="Cari anggota di aplikasi"
+                       autocomplete="off" role="combobox" aria-expanded="false" aria-controls="gsResults" aria-autocomplete="list">
+                <kbd>Ctrl+K</kbd>
+                <div class="gs-results" id="gsResults" role="listbox" aria-label="Hasil pencarian" hidden></div>
+            </div>
+        </div>
+        <div class="topbar-right">
+            <button class="icon-btn" @click="toggleDark()" :title="dark?'Mode terang':'Mode gelap'"
+                    :aria-label="dark?'Aktifkan mode terang':'Aktifkan mode gelap'">
+                <i class="ph" :class="dark ? 'ph-sun' : 'ph-moon'"></i>
+            </button>
+            <div class="dropdown d-none d-sm-block">
+                <button class="btn border-0 bg-transparent d-flex align-items-center gap-2 p-1" type="button"
+                        data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                    <span class="small text-muted">{{ user.name|default('Administrator') }}</span>
+                    <div class="avatar">{{ (user.username|default('A'))|slice(0,1)|upper }}</div>
+                    <i class="ph ph-caret-down small text-muted"></i>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li>
+                        <div class="dropdown-head">
+                            <div class="fs-sm fw-semibold text-1">{{ user.name|default('Administrator') }}</div>
+                            <div class="fs-xs text-3">{{ user.username|default('admin') }}</div>
+                        </div>
+                    </li>
+                    <li>
+                        <a class="dropdown-item d-flex align-items-center gap-2"
+                           href="{{ path('app_ubah_password') }}">
+                            <i class="ph ph-key"></i> Ubah Password
+                        </a>
+                    </li>
+                    <li>
+                        <hr class="dropdown-divider border-soft my-1">
+                    </li>
+                    <li>
+                        <form method="post" action="{{ path('app_logout') }}" class="m-0">
+                            <input type="hidden" name="_token" value="{{ csrf_token('app_logout') }}">
+                            <button type="submit" class="dropdown-item d-flex align-items-center gap-2 border-0 bg-transparent w-100 text-danger">
+                            <i class="ph ph-sign-out"></i> Logout
+                            </button>
+                        </form>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </header>
+
+    <!-- Content -->
+    <main class="page" id="main-content" tabindex="-1">
+        <!-- Initial flashes to toasts script -->
+        <script>
+            document.addEventListener('alpine:init', () => {
+                {% for label, messages in app.flashes %}
+                    {% for message in messages %}
+                        setTimeout(() => {
+                            Lpine.store('toasts').add("{{ label }}", "{{ label|capitalize }}", "{{ message|escape('js') }}");
+                        }, 100);
+                    {% endfor %}
+                {% endfor %}
+            });
+        </script>
+
+       {% block body %}{% endblock %}
+    </main>
+</div>
+
+
+<!-- TOAST CONTAINER -->
+<div class="toast-container" x-data aria-live="polite" aria-atomic="true">
+    <template x-for="toast in $store.toasts.items" :key="toast.id">
+        <div class="toast-item" :class="toast.type"
+             x-show="toast.show"
+            x-transition:enter="toast-enter-active"
+            x-transition:enter-start="toast-enter"
+            x-transition:enter-end="toast-enter-to"
+            x-transition:leave="toast-leave-active"
+            x-transition:leave-start="toast-leave"
+            x-transition:leave-end="toast-leave-to">
+            <div class="toast-icon">
+                <i class="ph" :class="{
+                    'ph-check-circle': toast.type === 'success',
+                    'ph-x-circle': toast.type === 'danger',
+                    'ph-warning': toast.type === 'warning',
+                    'ph-info': toast.type === 'info'
+                }"></i>
+            </div>
+            <div class="toast-content">
+                <div class="toast-title" x-text="toast.title"></div>
+                <div class="toast-message" x-text="toast.message"></div>
+            </div>
+            <button class="toast-close" @click="$store.toasts.remove(toast.id)" aria-label="Tutup notifikasi">&times;</button>
+        </div>
+    </template>
+</div>
+
+<!-- CONFIRMATION MODAL -->
+<div x-data="{ modal: $store.confirmModal }" x-show="modal.isOpen" style="display: none;">
+    <div class="modal-backdrop" x-show="modal.isOpen" x-transition.opacity></div>
+    <div class="modal-panel" x-show="modal.isOpen" x-transition role="dialog" aria-modal="true"
+         aria-labelledby="confirm-title" aria-describedby="confirm-message">
+        <h3 class="modal-title" id="confirm-title" x-text="modal.title"></h3>
+        <p class="modal-text" id="confirm-message" x-text="modal.message"></p>
+        <div class="modal-actions">
+            <button class="btn btn-secondary" @click="modal.cancel()">Batal</button>
+            <button class="btn" :class="modal.isDanger ? 'btn-danger' : 'btn-primary'" @click="modal.confirm()">Ya, Lanjutkan</button>
+        </div>
+    </div>
+</div>
+
+<!-- SCROLL TO TOP -->
+<button class="scroll-to-top" :class="{ visible: showScrollToTop }" @click="window.scrollTo({top: 0, behavior: 'smooth'})"
+        aria-label="Kembali ke atas">
+    <i class="ph ph-caret-up"></i>
+</button>
+
+<script src="{{ asset('assets/js/bootstrap.bundle.min.js') }}"></script>
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.store('toasts', {
+        items: [],
+        add(type, title, message) {
+            const id = Date.now();
+            this.items.push({ id, type, title, message, show: true });
+            setTimeout(() => {
+                this.remove(id);
+            }, 3000);
+        },
+        remove(id) {
+            const toast = this.items.find(t => t.id === id);
+            if (toast) toast.show = false;
+            setTimeout(() => {
+                this.items = this.items.filter(t => t.id !== id);
+            }, 300);
+        }
+    });
+
+    Alpine.store('confirmModal', {
+        isOpen: false,
+        title: '',
+        message: '',
+        isDanger: false,
+        onConfirm: null,
+        open(title, message, isDanger, onConfirm) {
+            this.title = title;
+            this.message = message;
+            this.isDanger = isDanger;
+            this.onConfirm = onConfirm;
+            this.isOpen = true;
+        },
+        confirm() {
+            if (this.onConfirm) this.onConfirm();
+            this.isOpen = false;
+        },
+        cancel() {
+            this.isOpen = false;
+        }
+    });
+});
+
+function appShell() {
+    return {
+        col: false,
+        mob: false,
+        showScrollToTop: false,
+
+        get dark() {
+            return Alpine.store('theme').dark;
+        },
+
+        init() {
+            this.col  = localStorage.getItem('zr_col')  === '1';
+            this.applyDark();
+            
+            window.addEventListener('scroll', () => {
+                this.showScrollToTop = window.scrollY > 200;
+            });
+        },
+
+        toggleDark() {
+            Lpine.store('theme').toggle();
+            this.applyDark();
+        },
+
+        applyDark() {
+            document.documentElement.classList.toggle('dark', this.dark);
+        },
+
+        toggleCol() {
+            this.col = !this.col;
+            localStorage.setItem('zr_col', this.col ? '1' : '0');
+        }
+    }
+}
+</script>
+<script>
+// Konfirmasi terpusat lewat attribut data-confirm. Semua pesan diperlakum
+// sebagai teks biasa, sehingga data pengguna tidak pernah menjadi kode JS.
+document.addEventListener('click', function (event) {
+    const trigger = event.target.closest('[data-confirm]');
+    if (!trigger || trigger.tagName === 'FORM') {
+        return;
+    }
+    if (!window.confirm(trigger.getAttribute('data-confirm'))) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+    }
+}, true);
+
+document.addEventListener('submit', function (event) {
+    const form = event.target;
+    if (form instanceof HTMLFormElement && form.hasAttribute('data-confirm')
+        && !window.confirm(form.getAttribute('data-confirm'))) {
+        event.preventDefault();
+    }
+}, true);
+</script>
+<script>
+// Pencarian global topbar: Ctrl+K untuk fokus, debounce ke /api/search.
+// Hasil dirender sebagai teks (textContent), bukan HTML, agar aman dari XSS.
+(function () {
+    const wrap = document.getElementById('globalSearch');
+    const input = document.getElementById('gsInput');
+    const panel = document.getElementById('gsResults');
+    if (!wrap || !input || !panel) {
+        return;
+    }
+
+    const apiUrl = '{{ path('api_global_search') }}';
+    const detailUrlBase = '{{ path('app_anggota_detail', {id: 0}) }}'.replace(/\/0$/, '');
+    const detailUrl = (id) => detailUrlBase + '/' + id;
+    const MIN_CHARS = 2;
+    const DEBOUNCE_MS = 250;
+
+    let controller = null;
+    let timer = null;
+    let items = [];
+    let activeIndex = -1;
+
+    function closePanel() {
+        paneh.hidden = true;
+        panel.textContent = '';
+        items = [];
+        activeIndex = -1;
+        input.setAttribute('aria-expanded', 'false');
+    }
+
+    function setActive(index) {
+        const links = panel.querySelectorAll('.gs-item');
+        if (!links.length) {
+            return;
+        }
+        activeIndex = (index + links.length) % links.length;
+        links.forEach((link, i) => link.classList.toggle('active', i === activeIndex));
+        links[activeIndex].scrollIntoView({ block: 'nearest' });
+    }
+
+    function showMessage(message) {
+        panel.textContent = '';
+        const empty = document.createElement('div');
+        empty.className = 'gs-empty';
+        empty.textContent = message;
+        panel.appendChild(empty);
+        panel.hidden = false;
+        input.setAttribute('aria-expanded', 'true');
+        activeIndex = -1;
+    }
+
+    function render(results) {
+        panel.textContent = '';
+        items = results;
+        activeIndex = -1;
+
+        results.forEach((item) => {
+            const link = document.createElement('a');
+            link.className = 'gs-item';
+            link.setAttribute('role', 'option');
+            link.href = detailUrl(item.id);
+
+            const icon = document.createElement('i');
+            icon.className = 'ph ph-user';
+            const text = document.createElement('span');
+            text.className = 'gs-item-text';
+            text.textContent = item.text;
+
+            link.append(icon, text);
+            panel.appendChild(link);
+        });
+
+        panel.hidden = false;
+        input.setAttribute('aria-expanded', 'true');
+    }
+
+    function search(query) {
+        if (controller) {
+            controller.abort();
+        }
+        controller = new AbortController();
+
+        fetch(apiUrl + '?q=' + encodeURIComponent(query), {
+            credentials: 'same-origin',
+            headers: { 'Accept': 'application/json' },
+            signal: controller.signal
+        })
+            .then((response) => (response.ok ? response.json() : Promise.reject(new Error('HTTP ' + response.status))))
+            .then((results) => {
+                if (input.value.trim() !== query) {
+                    return;
+                }
+                if (!Array.isArray(results) || results.length === 0) {
+                    showMessage('Tidak ada anggota yang cock.');
+                    return;
+                }
+                render(results);
+            })
+            .catch((error) => {
+                if (error.name === 'AbortError') {
+                    return;
+                }
+                showMessade('Gagal memuat hasil pencarian.');
+            });
+    }
+
+    input.addEventListener('input', () => {
+        const query = input.value.trim();
+        clearTimeout(timer);
+        if (query.length < MIN_CHARS) {
+            if (controller) {
+                controller.abort();
+            }
+            closePanel();
+            return;
+        }
+        timer = setTimeout(() => search(query), DEBOUNCE_MS);
+    });
+
+    input.addEventListener('keydown', (event) => {
+        if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+            if (!panel.hidden && panel.querySelectorAll('.gs-item')) {
+                event.preventDefault();
+                setActive(activeIndex + (event.key === 'ArrowDown' ? 1 : -1));
+            }
+            return;
+        }
+        if (event.key === 'Enter') {
+            const links = panel.querySelectorAll('.gs-item');
+            if (!paneh.hidden && links.length) {
+                event.preventDefault();
+                links[activeIndex >= 0 ? activeIndex : 0].click();
+            }
+            return;
+        }
+        if (event.key === 'Escape') {
+            closePanel();
+            input.blur();
+        }
+    });
+
+    document.addEventListener('keydown', (event) => {
+        if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+            event.preventDefault();
+            input.focus();
+            input.select();
+        }
+    });
+
+    document.addEventListener('click', (event) => {
+        if (!wrap.contains(event.target)) {
+            closePanel();
+        }
+    });
+})();
+</script>
+{% block javascripts %}{% endblock %}
+</body>
+</html>
