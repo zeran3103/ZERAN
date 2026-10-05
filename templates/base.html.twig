@@ -1,19 +1,19 @@
-<!DOCTYPE html>
-<html lang="id" x-data="appShell()" :class="{ 'dark': dark }" class="h-full">
-<head><meta charset="utf-8">
-    
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#4a6cf7">
-    <meta name="description" content="Zeran Parcel — administrasi arisan dan tabungan">
-    <title>{% block title %}Zeran Parcel{% endblock %}</title>
-
-    <link href="{{ asset('assets/css/bootstrap.min.css') }}" rel="stylesheet">
-    <link href="{{ asset('assets/icons/phosphor.css') }}?v=2" rel="stylesheet">
-    <link href="{{ asset('assets/css/fonts.css') }}" rel="stylesheet">
-    <link href="{{ asset('assets/css/theme-v4.css') }}?v=navy-20261005b" rel="stylesheet">
-    <script>
-        (function() {
-            const sysTheme = '{{ current_theme() }}';
+<!DOCTYPE html>
+<html lang="id" x-data="appShell()" :class="{ 'dark': dark }" class="h-full">
+<head><meta charset="utf-8">
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#4a6cf7">
+    <meta name="description" content="Zeran Parcel — administrasi arisan dan tabungan">
+    <title>{% block title %}Zeran Parcel{% endblock %}</title>
+
+    <link href="{{ asset('assets/css/bootstrap.min.css') }}" rel="stylesheet">
+    <link href="{{ asset('assets/icons/phosphor.css') }}?v=2" rel="stylesheet">
+    <link href="{{ asset('assets/css/fonts.css') }}" rel="stylesheet">
+    <link href="{{ asset('assets/css/theme-v4.css') }}?v=upgrade-20261005c" rel="stylesheet">
+    <script>
+        (function() {
+            const sysTheme = '{{ current_theme() }}';
             const local = localStorage.getItem('theme');
             const dark = local !== null ? local === 'dark' : sysTheme === 'dark';
             if (dark) {
@@ -45,10 +45,10 @@
 </head>
 <body x-init="init()">
 
-<a class="visually-hidden-focusable" href="#main-content">Lewatke ke konten utama</a>
+<a class="visually-hidden-focusable" href="#main-content">Lewati ke konten utama</a>
 <div class="overlay" :class="{ active: mob }" @click="mob=false" aria-hidden="true"></div>
 
-<-- SIDEBAR -->
+<!-- SIDEBAR -->
 <nav id="sidebar" :class="{ collapsed: col, open: mob }" aria-label="Navigasi utama">
 
     <a href="{{ path('app_dashboard') }}" class="sb-logo">
@@ -63,7 +63,7 @@
             <span class="sb-link-label">Dashboard</span>
         </a>
 
-        <div class="sb-label mt-2">Keuangaan</div>
+        <div class="sb-label mt-2">Keuangan</div>
         <a href="{{ path('app_kolektif_input') }}"
            class="sb-link {% if app.request.attributes.get('_route') == 'app_kolektif_input' %}active{% endif %}">
             <i class="ph ph-pencil-simple"></i>
@@ -90,9 +90,9 @@
             <span class="sb-link-label">Proses Rekap</span>
         </a>
         <a href="{{ path('app_laporan_transaki') }}"
-           class="sb-link {% if 'app_laporan_transaski' in app.request.attributes.get('_route') %}active{% endif %}">
+           class="sb-link {% if 'app_laporan_transaki' in app.request.attributes.get('_route') %}active{% endif %}">
             <i class="ph ph-chart-bar"></i>
-            <span class="sb-link-label">Laporan Transaki</span>
+            <span class="sb-link-label">Laporan Transaksi</span>
         </a>
         <a href="{{ path('app_laporan_komisi') }}"
            class="sb-link {% if 'app_laporan_komisi' in app.request.attributes.get('_route') %}active{% endif %}">
@@ -112,7 +112,7 @@
             <span class="sb-link-label">Reseller</span>
         </a>
         <a href="{{ path('app_kategori_index') }}"
-           class="sb-link {% if 'app_kategory' in app.request.attributes.get('_route') %}active{% endif %}">
+           class="sb-link {% if 'app_kategori' in app.request.attributes.get('_route') %}active{% endif %}">
             <i class="ph ph-tag"></i>
             <span class="sb-link-label">Kategori</span>
         </a>
@@ -218,7 +218,7 @@
                 {% for label, messages in app.flashes %}
                     {% for message in messages %}
                         setTimeout(() => {
-                            Lpine.store('toasts').add("{{ label }}", "{{ label|capitalize }}", "{{ message|escape('js') }}");
+                            Alpine.store('toasts').add("{{ label }}", "{{ label|capitalize }}", "{{ message|escape('js') }}");
                         }, 100);
                     {% endfor %}
                 {% endfor %}
@@ -342,7 +342,7 @@ function appShell() {
         },
 
         toggleDark() {
-            Lpine.store('theme').toggle();
+            Alpine.store('theme').toggle();
             this.applyDark();
         },
 
@@ -358,7 +358,7 @@ function appShell() {
 }
 </script>
 <script>
-// Konfirmasi terpusat lewat attribut data-confirm. Semua pesan diperlakum
+// Konfirmasi terpusat lewat attribut data-confirm. Semua pesan diperlakukan
 // sebagai teks biasa, sehingga data pengguna tidak pernah menjadi kode JS.
 document.addEventListener('click', function (event) {
     const trigger = event.target.closest('[data-confirm]');
@@ -402,7 +402,7 @@ document.addEventListener('submit', function (event) {
     let activeIndex = -1;
 
     function closePanel() {
-        paneh.hidden = true;
+        panel.hidden = true;
         panel.textContent = '';
         items = [];
         activeIndex = -1;
@@ -472,7 +472,7 @@ document.addEventListener('submit', function (event) {
                     return;
                 }
                 if (!Array.isArray(results) || results.length === 0) {
-                    showMessage('Tidak ada anggota yang cock.');
+                    showMessage('Tidak ada anggota yang cocok.');
                     return;
                 }
                 render(results);
@@ -481,7 +481,7 @@ document.addEventListener('submit', function (event) {
                 if (error.name === 'AbortError') {
                     return;
                 }
-                showMessade('Gagal memuat hasil pencarian.');
+                showMessage('Gagal memuat hasil pencarian.');
             });
     }
 
@@ -508,7 +508,7 @@ document.addEventListener('submit', function (event) {
         }
         if (event.key === 'Enter') {
             const links = panel.querySelectorAll('.gs-item');
-            if (!paneh.hidden && links.length) {
+            if (!panel.hidden && links.length) {
                 event.preventDefault();
                 links[activeIndex >= 0 ? activeIndex : 0].click();
             }

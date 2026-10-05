@@ -56,11 +56,11 @@
     --info-text:      #4a6a7a;
     --info-border:    rgba(90, 122, 138, 0.20);
 
-    /* gradient stat cards — removed for minimal design */
-    --gradient-purple: linear-gradient(135deg, #2d4a4a 0%, #3d5a5a 100%);
-    --gradient-blue: linear-gradient(135deg, #2d4a4a 0%, #3d5a5a 100%);
-    --gradient-red: linear-gradient(135deg, #2d4a4a 0%, #3d5a5a 100%);
-    --gradient-green: linear-gradient(135deg, #2d4a4a 0%, #3d5a5a 100%);
+    /* gradient stat cards — 4-tier unified teal */
+    --gradient-purple: linear-gradient(135deg, #1d3636 0%, #294747 100%);
+    --gradient-blue:   linear-gradient(135deg, #243f3f 0%, #345757 100%);
+    --gradient-red:    linear-gradient(135deg, #2c4a4a 0%, #3e6666 100%);
+    --gradient-green:  linear-gradient(135deg, #335454 0%, #477272 100%);
 
     /* typography font families */
     --font-sans:      -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
@@ -441,7 +441,9 @@ body {
     align-items: center;
     justify-content: space-between;
     padding: 0 24px;
-    background: var(--bg);
+    background: color-mix(in srgb, var(--bg) 92%, transparent);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     position: sticky;
     top: 0;
     z-index: 50;
@@ -698,6 +700,7 @@ body {
 .card:hover {
     box-shadow: var(--shadow-md);
     border-color: var(--border-strong);
+    transform: translateY(-2px);
 }
 
 .card-header {
@@ -744,6 +747,7 @@ body {
 .stat:hover {
     box-shadow: var(--shadow-md);
     border-color: var(--border-strong);
+    transform: translateY(-2px);
 }
 
 .stat-icon-watermark { display: none; }
@@ -774,13 +778,28 @@ body {
     position: relative;
 }
 
-/* Gradient stat cards (Unified Teal) */
-.stat-gradient-purple,
-.stat-gradient-blue,
-.stat-gradient-red,
-.stat-gradient-green {
+/* Gradient stat cards (Unified Teal 4-Tier) */
+.stat-gradient-purple {
     background: var(--gradient-purple);
-    border: none;
+    border: 1px solid rgba(212, 165, 116, 0.25);
+    color: #f0d9c0;
+    box-shadow: var(--shadow);
+}
+.stat-gradient-blue {
+    background: var(--gradient-blue);
+    border: 1px solid rgba(212, 165, 116, 0.20);
+    color: #f0d9c0;
+    box-shadow: var(--shadow);
+}
+.stat-gradient-red {
+    background: var(--gradient-red);
+    border: 1px solid rgba(212, 165, 116, 0.20);
+    color: #f0d9c0;
+    box-shadow: var(--shadow);
+}
+.stat-gradient-green {
+    background: var(--gradient-green);
+    border: 1px solid rgba(212, 165, 116, 0.20);
     color: #f0d9c0;
     box-shadow: var(--shadow);
 }
@@ -795,6 +814,7 @@ body {
 .stat-gradient-red:hover,
 .stat-gradient-green:hover {
     box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
 }
 .stat-gradient-purple .stat-label,
 .stat-gradient-blue .stat-label,
@@ -1073,10 +1093,14 @@ fieldset:disabled .btn {
     --bs-btn-disabled-bg: var(--accent);
     --bs-btn-disabled-border-color: var(--accent);
     --bs-btn-disabled-color: var(--accent-fg);
-    background: var(--accent);
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
     color: var(--accent-fg);
     border-color: var(--accent);
     box-shadow: var(--shadow-sm);
+    transition: var(--transition);
+}
+.btn-primary:active {
+    transform: scale(0.98);
 }
 .btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
 
@@ -1905,3 +1929,68 @@ html.dark .text-success { color: var(--accent) !important; }
 html.dark .text-warning { color: var(--accent) !important; }
 html.dark .text-danger  { color: var(--accent) !important; }
 html.dark .text-info    { color: var(--accent) !important; }
+
+/* ── VISUAL UPGRADE: DASHBOARD & STAT CARDS SPECIFICITY OVERRIDES ── */
+html:root body .dashboard-stat.s-accent {
+    background: linear-gradient(135deg, #1d3636 0%, #294747 100%) !important;
+    border: 1px solid rgba(212, 165, 116, 0.25) !important;
+    color: #ffffff !important;
+}
+html:root body .dashboard-stat.s-success {
+    background: linear-gradient(135deg, #243f3f 0%, #345757 100%) !important;
+    border: 1px solid rgba(212, 165, 116, 0.20) !important;
+    color: #ffffff !important;
+}
+html:root body .dashboard-stat.s-warning {
+    background: linear-gradient(135deg, #2c4a4a 0%, #3e6666 100%) !important;
+    border: 1px solid rgba(212, 165, 116, 0.20) !important;
+    color: #ffffff !important;
+}
+html:root body .dashboard-stat.s-info {
+    background: linear-gradient(135deg, #335454 0%, #477272 100%) !important;
+    border: 1px solid rgba(212, 165, 116, 0.20) !important;
+    color: #ffffff !important;
+}
+html:root body .dashboard-stat .stat-number {
+    color: #ffffff !important;
+}
+html:root body .dashboard-stat .stat-label {
+    color: rgba(255, 255, 255, 0.85) !important;
+}
+html:root body .dashboard-stat .stat-sub {
+    color: rgba(255, 255, 255, 0.70) !important;
+}
+html:root body .dashboard-stat {
+    border-radius: 16px !important;
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease !important;
+}
+html:root body .dashboard-stat:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Dark mode dashboard stats: Rich Navy with Gold accents */
+html.dark body .dashboard-stat.s-accent,
+html.dark body .dashboard-stat.s-success,
+html.dark body .dashboard-stat.s-warning,
+html.dark body .dashboard-stat.s-info {
+    background: linear-gradient(145deg, #1e293b 0%, #0f172a 100%) !important;
+    border: 1px solid rgba(212, 165, 116, 0.20) !important;
+    border-top: 3px solid #d4a574 !important;
+    box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.5) !important;
+}
+html.dark body .dashboard-stat .stat-number {
+    color: #f1f5f9 !important;
+}
+html.dark body .dashboard-stat .stat-label {
+    color: #d4a574 !important;
+    font-weight: 600 !important;
+}
+html.dark body .dashboard-stat .stat-sub {
+    color: #94a3b8 !important;
+}
+html.dark body .dashboard-stat:hover {
+    border-color: rgba(212, 165, 116, 0.40) !important;
+    box-shadow: 0 8px 28px -2px rgba(0, 0, 0, 0.7), 0 0 15px rgba(212, 165, 116, 0.15) !important;
+}
+
