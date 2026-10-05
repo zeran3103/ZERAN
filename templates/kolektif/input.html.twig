@@ -1,0 +1,1247 @@
+{% extends 'base.html.twig' %}
+{% block title %}Input Kolektif — Zeran Parcel{% endblock %}
+
+{% block stylesheets %}
+<style>
+    :root {
+        --primary-gradient: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
+        --card-shadow: 0 2px 8px rgba(0,0,0,0.06), 0 0 1px rgba(0,0,0,0.08);
+        --card-shadow-hover: 0 4px 16px rgba(0,0,0,0.1), 0 0 1px rgba(0,0,0,0.12);
+    }
+
+    /* Card modern dengan shadow lebih dalam */
+    .card {
+        border: none;
+        border-radius: 14px;
+        box-shadow: var(--card-shadow);
+        transition: box-shadow 0.25s ease;
+        overflow: hidden;
+    }
+    .card:hover {
+        box-shadow: var(--card-shadow-hover);
+    }
+    .card-header {
+        background: linear-gradient(to bottom, var(--bg-card) 0%, var(--bg-sub) 100%);
+        border-bottom: 2px solid var(--border);
+        padding: 16px 20px;
+        font-weight: 700;
+        font-size: 15px;
+    }
+    .card-title {
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--text);
+        letter-spacing: -0.01em;
+    }
+    .icon-chip {
+        width: 32px;
+        height: 32px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--primary-gradient);
+        color: white;
+        border-radius: 8px;
+        font-size: 16px;
+    }
+
+    /* Filter form lebih compact dan modern */
+    .card-body {
+        padding: 20px;
+    }
+    .form-label {
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--text-2);
+        margin-bottom: 6px;
+    }
+    .form-select, .form-control {
+        border-radius: 10px;
+        border: 1.5px solid var(--border);
+        padding: 9px 12px;
+        font-size: 14px;
+        transition: all 0.2s ease;
+        background-color: var(--bg-card);
+    }
+    .form-select:focus, .form-control:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(45, 74, 74, 0.12);
+        outline: none;
+    }
+    .form-select-sm, .form-control-sm {
+        font-size: 13.5px;
+        padding: 8px 11px;
+    }
+
+    /* Status baris dengan gradient subtle */
+    .member-row.is-paid td {
+        background: linear-gradient(to right, rgba(90, 122, 106, 0.06), rgba(90, 122, 106, 0.02)) !important;
+    }
+    .member-row.is-paid {
+        opacity: 0.88;
+    }
+    .member-row.is-lunas td {
+        background: linear-gradient(to right, rgba(107, 114, 128, 0.08), rgba(107, 114, 128, 0.03)) !important;
+    }
+    .member-row.is-lunas {
+        opacity: 0.65;
+    }
+
+    /* Highlight baris aktif dengan accent yang lebih kuat */
+    .member-row:focus-within td {
+        background: linear-gradient(to right, rgba(45, 74, 74, 0.12), rgba(61, 90, 90, 0.08)) !important;
+    }
+    .member-row:focus-within {
+        box-shadow: inset 4px 0 0 var(--accent);
+    }
+    .member-row.is-checked:not(:focus-within) td {
+        background: linear-gradient(to right, rgba(45, 74, 74, 0.08), transparent);
+    }
+
+    /* Input nominal dengan styling premium */
+    .member-nominal {
+        font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', monospace;
+        font-size: 14px;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        color: var(--text) !important;
+        border-radius: 8px;
+        border: 2px solid var(--border);
+        padding: 8px 10px;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        background: var(--bg-card);
+    }
+    .member-nominal:focus {
+        border-color: var(--accent) !important;
+        box-shadow: 0 0 0 3px rgba(45, 74, 74, 0.15), 0 2px 8px rgba(45, 74, 74, 0.18) !important;
+        background: white;
+    }
+    .member-nominal.is-overpay {
+        border-color: var(--danger) !important;
+        background: linear-gradient(to right, rgba(239, 68, 68, 0.08), rgba(239, 68, 68, 0.03)) !important;
+        color: var(--danger-text) !important;
+        animation: shake 0.4s ease-in-out;
+    }
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-4px); }
+        75% { transform: translateX(4px); }
+    }
+    .overpay-badge {
+        font-size: 11px;
+        color: var(--danger-text);
+        font-weight: 600;
+        margin-top: 4px;
+        display: none;
+        padding: 3px 8px;
+        background: rgba(239, 68, 68, 0.1);
+        border-radius: 6px;
+        border-left: 3px solid var(--danger);
+    }
+
+    /* Sticky summary strip dengan gradient modern */
+    .batch-summary-strip {
+        background: linear-gradient(135deg, rgba(45, 74, 74, 0.08) 0%, rgba(61, 90, 90, 0.06) 100%);
+        border-bottom: 2px solid var(--border);
+        padding: 14px 20px;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        position: sticky;
+        top: 0;
+        z-index: 12;
+        backdrop-filter: blur(12px);
+    }
+    .batch-stat-item {
+        display: flex;
+        flex-direction: column;
+        min-width: 100px;
+        padding: 8px 14px;
+        background: var(--bg-card);
+        border-radius: 10px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    }
+    .batch-stat-item .stat-lbl {
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--text-3);
+        font-weight: 700;
+        margin-bottom: 4px;
+    }
+    .batch-stat-item .stat-val {
+        font-size: 17px;
+        font-weight: 800;
+        line-height: 1.2;
+        font-family: 'SF Mono', 'Monaco', monospace;
+        letter-spacing: -0.02em;
+    }
+    .text-accent {
+        color: var(--accent) !important;
+    }
+    .batch-stat-sep {
+        width: 2px;
+        background: linear-gradient(to bottom, transparent, var(--border), transparent);
+        height: 32px;
+    }
+
+    /* Table modern dengan spacing lebih baik */
+    .data-table {
+        margin: 0;
+        font-size: 13.5px;
+    }
+    .data-table thead {
+        background: linear-gradient(to bottom, var(--bg-sub), rgba(0,0,0,0.02));
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+    .data-table thead th {
+        font-size: 11.5px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--text-2);
+        padding: 14px 12px;
+        border-bottom: 2px solid var(--border);
+        white-space: nowrap;
+    }
+    .data-table tbody tr {
+        transition: all 0.15s ease;
+        border-bottom: 1px solid var(--border);
+    }
+    .data-table tbody tr:hover {
+        background: linear-gradient(to right, rgba(45, 74, 74, 0.04), transparent);
+    }
+    .data-table tbody td {
+        padding: 12px;
+        vertical-align: middle;
+    }
+
+    /* Badge modern */
+    .badge {
+        font-weight: 600;
+        padding: 5px 10px;
+        border-radius: 8px;
+        font-size: 12px;
+        letter-spacing: 0.01em;
+    }
+    .badge-accent {
+        background: linear-gradient(135deg, rgba(45, 74, 74, 0.15), rgba(61, 90, 90, 0.12));
+        color: var(--accent);
+        border: 1px solid rgba(45, 74, 74, 0.2);
+    }
+    .badge-green {
+        background: linear-gradient(135deg, rgba(90, 122, 106, 0.15), rgba(90, 122, 106, 0.1));
+        color: var(--success-text);
+        border: 1px solid rgba(90, 122, 106, 0.2);
+    }
+    .badge-yellow {
+        background: linear-gradient(135deg, rgba(251, 191, 36, 0.18), rgba(251, 191, 36, 0.12));
+        color: var(--warning-text);
+        border: 1px solid rgba(251, 191, 36, 0.25);
+    }
+
+    /* Button modern dengan gradient */
+    .btn {
+        border-radius: 10px;
+        font-weight: 600;
+        padding: 9px 16px;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        letter-spacing: 0.01em;
+        border: none;
+    }
+    .btn-primary {
+        background: var(--primary-gradient);
+        color: white;
+        box-shadow: 0 2px 8px rgba(45, 74, 74, 0.3);
+    }
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 16px rgba(45, 74, 74, 0.4);
+    }
+    .btn-primary:active {
+        transform: translateY(0);
+    }
+    .btn-secondary {
+        background: var(--bg-sub);
+        color: var(--text);
+        border: 1.5px solid var(--border);
+    }
+    .btn-secondary:hover {
+        background: var(--bg-card);
+        border-color: var(--accent);
+        color: var(--accent);
+    }
+    .btn-outline-secondary {
+        background: transparent;
+        border: 1.5px solid var(--border);
+        color: var(--text-2);
+    }
+    .btn-outline-secondary:hover {
+        background: var(--bg-sub);
+        border-color: var(--text-2);
+        color: var(--text);
+    }
+    .btn-warning {
+        background: linear-gradient(135deg, var(--warning), #5a7a6a);
+        color: white;
+        box-shadow: 0 2px 8px rgba(90, 122, 106, 0.3);
+    }
+    .btn-warning:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 16px rgba(90, 122, 106, 0.4);
+    }
+
+    /* Keyboard hint badge modern */
+    .kbd-hint {
+        display: inline-block;
+        padding: 2px 6px;
+        font-size: 10px;
+        font-family: 'SF Mono', 'Monaco', monospace;
+        font-weight: 700;
+        line-height: 1.3;
+        color: var(--text-2);
+        background: var(--bg-sub);
+        border: 1px solid var(--border);
+        border-radius: 5px;
+        vertical-align: middle;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+    [data-bs-theme="dark"] .kbd-hint,
+    .dark-mode .kbd-hint,
+    html.dark .kbd-hint {
+        background: rgba(255, 255, 255, 0.08);
+        border-color: rgba(255, 255, 255, 0.15);
+        color: var(--text-3);
+    }
+    .btn-primary .kbd-hint {
+        background: rgba(255, 255, 255, 0.2);
+        border-color: rgba(255, 255, 255, 0.3);
+        color: white;
+    }
+
+    /* Search input dengan styling khusus */
+    #quickSearchAnggota {
+        border-radius: 10px;
+        border: 1.5px solid var(--border);
+        padding: 8px 36px 8px 36px;
+        font-size: 13.5px;
+        transition: all 0.2s ease;
+    }
+    #quickSearchAnggota:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(45, 74, 74, 0.12);
+    }
+
+    /* Checkbox custom */
+    .form-check-input {
+        width: 18px;
+        height: 18px;
+        border: 2px solid var(--border);
+        border-radius: 5px;
+        cursor: pointer;
+        transition: all 0.15s ease;
+    }
+    .form-check-input:checked {
+        background-color: var(--accent);
+        border-color: var(--accent);
+    }
+    .form-check-input:focus {
+        box-shadow: 0 0 0 3px rgba(45, 74, 74, 0.15);
+        border-color: var(--accent);
+    }
+
+    /* Footer card dengan gradient subtle */
+    .card-footer {
+        background: linear-gradient(to top, var(--bg-sub), rgba(0,0,0,0.01));
+        border-top: 2px solid var(--border);
+        padding: 14px 20px;
+    }
+
+    /* Alert warning modern */
+    .alert-warning {
+        background: linear-gradient(135deg, rgba(251, 191, 36, 0.12), rgba(251, 191, 36, 0.08));
+        border: 1.5px solid rgba(251, 191, 36, 0.25);
+        border-radius: 12px;
+        padding: 16px 20px;
+        color: var(--warning-text);
+    }
+
+    /* Empty state modern */
+    .empty {
+        text-align: center;
+        padding: 60px 20px;
+    }
+    .empty i {
+        font-size: 56px;
+        opacity: 0.3;
+        margin-bottom: 16px;
+    }
+    .empty-title {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--text);
+        margin-bottom: 8px;
+    }
+    .empty-sub {
+        font-size: 14px;
+        color: var(--text-2);
+        line-height: 1.6;
+    }
+
+    /* Print-friendly styles */
+    @media print {
+        .page-hd,
+        .card-header,
+        .card-footer,
+        .batch-summary-strip,
+        .btn,
+        .form-check-input,
+        #quickSearchAnggota,
+        .btn-group,
+        .alert-warning,
+        .icon-chip {
+            display: none !important;
+        }
+        body {
+            background: white !important;
+            font-size: 11pt;
+        }
+        .card {
+            box-shadow: none !important;
+            border: 1px solid #ccc !important;
+            page-break-inside: avoid;
+        }
+        .data-table {
+            font-size: 9pt;
+        }
+        .data-table thead {
+            background: var(--bg-sub) !important;
+        }
+        .data-table thead th {
+            background: var(--bg) !important;
+            color: black !important;
+            border: 1px solid #ccc !important;
+            padding: 6px 8px !important;
+        }
+        .data-table tbody td {
+            border: 1px solid #ddd !important;
+            padding: 5px 8px !important;
+        }
+        .member-nominal {
+            border: none !important;
+            background: transparent !important;
+            font-weight: 700;
+        }
+        .badge {
+            border: 1px solid #999 !important;
+            background: var(--bg-sub) !important;
+            color: black !important;
+        }
+        @page {
+            margin: 1.5cm;
+            size: A4 landscape;
+        }
+        .page-hd {
+            background: white !important;
+            color: black !important;
+            border-bottom: 2px solid var(--accent);
+            padding: 0 0 12px 0 !important;
+            margin-bottom: 16px !important;
+            box-shadow: none !important;
+        }
+        .page-hd h1 {
+            color: var(--accent) !important;
+            font-size: 20pt !important;
+        }
+        .page-hd p {
+            color: #666 !important;
+        }
+    }
+
+    /* Export button group */
+    .export-btn-group {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+    }
+    .btn-export {
+        background: linear-gradient(135deg, var(--success), #5a7a6a);
+        color: white;
+        border: none;
+        padding: 7px 14px;
+        border-radius: 8px;
+        font-size: 12.5px;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.2s ease;
+        box-shadow: 0 2px 6px rgba(90, 122, 106, 0.25);
+    }
+    .btn-export:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(90, 122, 106, 0.35);
+    }
+    .btn-export-csv {
+        background: linear-gradient(135deg, var(--info), var(--info-text));
+        box-shadow: 0 2px 6px rgba(90, 122, 138, 0.25);
+    }
+    .btn-export-csv:hover {
+        box-shadow: 0 4px 12px rgba(90, 122, 138, 0.35);
+    }
+    .btn-export-print {
+        background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+        box-shadow: 0 2px 6px rgba(45, 74, 74, 0.25);
+    }
+    .btn-export-print:hover {
+        box-shadow: 0 4px 12px rgba(45, 74, 74, 0.35);
+    }
+</style>
+{% endblock %}
+
+{% block body %}
+
+<div class="page-hd">
+    <div class="page-hd-row">
+        <div>
+            <h1>Input Kolektif</h1>
+            <p>Input setoran anggota secara massal dalam satu batch per reseller &amp; periode.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ path('app_kolektif_index') }}" class="btn btn-secondary"><i class="ph ph-stack"></i> Daftar Batch</a>
+            <a href="{{ path('app_transaksi_index') }}" class="btn btn-secondary"><i class="ph ph-arrows-left-right"></i> Transaksi</a>
+        </div>
+    </div>
+</div>
+
+{% if lockReason %}
+<div class="alert alert-warning d-flex align-items-center gap-2" role="alert">
+    <i class="ph ph-lock fs-5"></i>
+    <div><strong>Periode terkunci.</strong> {{ lockReason }} Form input dan tombol Simpan dinonaktifkan.</div>
+</div>
+{% endif %}
+
+<!-- Card Filter Reseller & Periode -->
+<div class="card mb-4">
+    <div class="card-header py-2 px-3 d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center gap-2">
+            <span class="icon-chip"><i class="ph ph-sliders-horizontal"></i></span>
+            <span class="card-title">Filter Reseller &amp; Periode</span>
+        </div>
+        <span id="filterChangedNotice" class="d-none badge badge-yellow">
+            <i class="ph ph-warning me-1"></i>Filter diubah — klik Tampilkan Anggota
+        </span>
+    </div>
+    <div class="card-body p-3">
+        <form method="get" action="{{ path('app_kolektif_input') }}" id="filterForm" class="row g-2 align-items-end">
+            <div class="col-6 col-sm-3 col-md-2 col-lg-2">
+                <label class="form-label text-3 fs-xs fw-semibold mb-1">Tahun <span class="text-danger">*</span></label>
+                <select name="tahun" id="tahunSelect" class="form-select form-select-sm" required>
+                    {% for y in yearsList %}<option value="{{ y }}" {% if tahun==y %}selected{% endif %}>{{ y }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="col-6 col-sm-3 col-md-2 col-lg-2">
+                <label class="form-label text-3 fs-xs fw-semibold mb-1">Bulan <span class="text-danger">*</span></label>
+                <select name="bulan" id="bulanSelect" class="form-select form-select-sm" required>
+                    {% for mKey,mName in monthsList %}<option value="{{ mKey }}" {% if bulan==mKey %}selected{% endif %}>{{ mName }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="col-12 col-sm-6 col-md-4 col-lg-4">
+                <label class="form-label text-3 fs-xs fw-semibold mb-1">Reseller <span class="text-danger">*</span></label>
+                <select name="reseller_id" id="resellerSelect" class="form-select form-select-sm" required>
+                    <option value="">— Pilih Reseller —</option>
+                    {% for r in resellers %}<option value="{{ r.id }}" {% if resellerId==r.id %}selected{% endif %}>{{ r.namaReseller }} ({{ r.kodeReseller }})</option>{% endfor %}
+                </select>
+            </div>
+            <div class="col-12 col-sm-8 col-md-3 col-lg-3">
+                <label class="form-label text-3 fs-xs fw-semibold mb-1">
+                    Kategori / Paket
+                    <span id="katLoad" class="d-none fs-xs text-3 ms-1">loading…</span>
+                </label>
+                <select name="kategori_id" id="kategoriSelect" class="form-select form-select-sm">
+                    <option value="0">Semua{% if resellerId>0 %} (reseller ini){% endif %}</option>
+                    {% for k in kategoris %}<option value="{{ k.id }}" {% if kategoriId==k.id %}selected{% endif %}>{{ k.nama_kategori }}{% if k.count_anggota is defined and k.count_anggota>0 %} ({{ k.count_anggota }}){% endif %}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="col-12 col-sm-4 col-md-1 col-lg-1">
+                <button type="submit" class="btn btn-primary btn-sm w-100 fw-medium d-flex align-items-center justify-content-center gap-1" id="btnFilterSubmit" title="Muat data anggota (Alt+L)">
+                    <i class="ph ph-magnifying-glass"></i>
+                    <span class="d-md-none">Tampilkan</span>
+                    <kbd class="kbd-hint d-none d-lg-inline-block">Alt+L</kbd>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if resellerId > 0 %}
+    {% if anggotaList|length > 0 %}
+
+        <form method="post" action="{{ path('app_kolektif_input') }}" id="formKolektif">
+            <input type="hidden" name="_token" value="{{ csrf_token('app_kolektif_input') }}">
+            <input type="hidden" name="periode" value="{{ periode }}">
+            <input type="hidden" name="reseller_id" value="{{ resellerId }}">
+            <input type="hidden" name="kategori_id" value="{{ kategoriId }}">
+            <input type="hidden" name="submit_action" id="submitActionInput" value="detail">
+
+            <!-- Card Tabel & Sticky Live Metrics -->
+            <div class="card mb-4">
+                <div class="card-header py-2 px-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <span class="fw-semibold text-1 fs-sm">Daftar Anggota</span>
+                        <span class="badge badge-accent font-monospace">{{ anggotaList|length }} Anggota</span>
+                        {% for r in resellers %}{% if resellerId == r.id %}
+                            <span class="badge text-muted border font-monospace">{{ r.namaReseller }}</span>
+                        {% endif %}{% endfor %}
+                        <span class="badge text-muted border font-monospace">{{ periode|format_periode(false) }}</span>
+                    </div>
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <div class="position-relative" style="min-width: 240px;">
+                            <input type="search" id="quickSearchAnggota" class="form-control form-control-sm ps-4 pe-5" placeholder="Cari nama / kode...">
+                            <i class="ph ph-magnifying-glass position-absolute text-muted" style="left:10px;top:50%;transform:translateY(-50%);font-size:13px;pointer-events:none;"></i>
+                            <kbd class="kbd-hint position-absolute" style="right:8px;top:50%;transform:translateY(-50%);pointer-events:none;">/</kbd>
+                        </div>
+                        <span id="searchCountBadge" class="badge badge-accent d-none fs-xs"></span>
+                        <div class="btn-group btn-group-sm">
+                            <button type="button" id="btnSelectAll" class="btn btn-outline-secondary" title="Pilih Semua (Alt+A)"{% if lockReason %} disabled{% endif %}>
+                                <i class="ph ph-check me-1"></i> Semua <kbd class="kbd-hint ms-1">Alt+A</kbd>
+                            </button>
+                            <button type="button" id="btnUnselectAll" class="btn btn-outline-secondary text-danger" title="Kosongkan (Alt+C)"{% if lockReason %} disabled{% endif %}>
+                                <i class="ph ph-x me-1"></i> Reset <kbd class="kbd-hint ms-1">Alt+C</kbd>
+                            </button>
+                        </div>
+                        <div class="export-btn-group">
+                            <button type="button" id="btnExportCSV" class="btn-export btn-export-csv" title="Export ke CSV" {% if lockReason %} disabled{% endif %}>
+                                <i class="ph ph-file-csv"></i> CSV
+                            </button>
+                            <button type="button" id="btnExportPDF" class="btn-export btn-export-print" title="Cetak / Print" {% if lockReason %} disabled{% endif %}>
+                                <i class="ph ph-printer"></i> Print
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sticky Summary Strip -->
+                <div class="batch-summary-strip">
+                    <div class="d-flex align-items-center gap-3 gap-md-4 flex-wrap">
+                        <div class="batch-stat-item">
+                            <span class="stat-lbl">Anggota Terpilih</span>
+                            <div class="stat-val text-accent">
+                                <span id="totalCheckedCount" aria-live="polite">0</span>
+                                <span class="text-3 fw-normal fs-sm">/ {{ anggotaList|length }}</span>
+                            </div>
+                        </div>
+                        <div class="batch-stat-sep"></div>
+                        <div class="batch-stat-item">
+                            <span class="stat-lbl">Total Setoran Batch</span>
+                            <div class="stat-val text-success" id="totalNominalDisplay" aria-live="polite">Rp 0</div>
+                        </div>
+                        <div class="batch-stat-sep d-none d-sm-block"></div>
+                        <div class="batch-stat-item d-none d-sm-block">
+                            <span class="stat-lbl">Sisa Sebelum Bayar</span>
+                            <div class="stat-val text-3" id="totalSisaDisplay">Rp 0</div>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <button type="submit" id="btnSubmitTop" class="btn btn-primary btn-sm px-3 fw-medium" title="Simpan Batch (Ctrl+S)"{% if lockReason %} disabled{% endif %}>
+                            <i class="ph ph-floppy-disk me-1"></i> Simpan Batch <kbd class="kbd-hint ms-1">Ctrl+S</kbd>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Data Table -->
+                <div class="table-responsive">
+                    <table class="data-table table-hover" id="tableAnggota">
+                        <thead>
+                            <tr>
+                                <th style="width:40px;" class="text-center">
+                                    <input type="checkbox" id="checkMaster" class="form-check-input cursor-pointer"{% if lockReason %} disabled{% endif %}>
+                                </th>
+                                <th style="width:45px;">#</th>
+                                <th>Anggota</th>
+                                <th>Kategori</th>
+                                <th class="text-end" style="width:115px;">Target</th>
+                                <th class="text-end" style="width:115px;">Sudah Bayar</th>
+                                <th class="text-end" style="width:110px;">Sisa</th>
+                                <th class="text-center" style="width:110px;">Bulan Ini</th>
+                                <th class="text-end" style="width:190px;">Nominal Bayar (Rp)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for a in anggotaList %}
+                                {% set isAlreadyPaid = a.sudah_bayar_bulan_ini > 0 %}
+                                {% set isLunas = a.target > 0 and a.sisa <= 0 %}
+                                <tr class="member-row {% if isAlreadyPaid %}is-paid{% endif %} {% if isLunas %}is-lunas{% endif %} transition-colors"
+                                    data-member-id="{{ a.id }}"
+                                    data-target="{{ a.target }}"
+                                    data-sudah="{{ a.sudah_dibayar }}"
+                                    data-sisa="{{ a.sisa }}"
+                                    data-lunas="{{ isLunas ? 1 : 0 }}"
+                                    data-default-val="{{ isLunas ? 0 : (a.nominal_standar ?: 0) }}">
+                                    <td class="text-center">
+                                        <input type="checkbox" name="selected_members[]" value="{{ a.id }}"
+                                               class="member-check form-check-input cursor-pointer"
+                                               aria-label="Pilih {{ a.nama_anggota }}"
+                                               {% if lockReason %}disabled title="Periode terkunci"{% elseif isLunas %}disabled title="Anggota sudah lunas"{% endif %}>
+                                    </td>
+                                    <td class="text-muted fs-sm font-monospace">#{{ a.id }}</td>
+                                    <td>
+                                        <div class="fw-semibold text-1">{{ a.nama_anggota }}</div>
+                                        <div class="fs-xs text-3 font-monospace">{{ a.kode_anggota ?: '—' }}{% if a.bonus_thr %} <span class="badge badge-yellow ms-1">THR</span>{% endif %}</div>
+                                    </td>
+                                    <td>
+                                        {% if a.nama_kategori %}
+                                            <div class="fw-medium text-1 fs-sm">{{ a.nama_kategori }}</div>
+                                            {% if a.kode_kategori %}<div class="fs-xs text-3 font-monospace">{{ a.kode_kategori }}</div>{% endif %}
+                                        {% else %}
+                                            <span class="text-3">—</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end text-muted font-monospace fs-sm">Rp {{ a.target|number_format(0,',','.') }}</td>
+                                    <td class="text-end text-muted font-monospace fs-sm">Rp {{ a.sudah_dibayar|number_format(0,',','.') }}</td>
+                                    <td class="text-end fw-semibold font-monospace fs-sm">
+                                        {% if a.sisa <= 0 %}
+                                            <span class="badge badge-green"><i class="ph ph-check-circle me-1"></i>Lunas</span>
+                                        {% else %}
+                                            Rp {{ a.sisa|number_format(0,',','.') }}
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center font-monospace">
+                                        {% if isAlreadyPaid %}
+                                            <span class="badge badge-green"><i class="ph ph-check-circle me-1"></i>Rp {{ a.sudah_bayar_bulan_ini|number_format(0,',','.') }}</span>
+                                        {% else %}
+                                            <span class="badge text-3"><i class="ph ph-minus"></i></span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end p-2">
+                                        <div>
+                                            <input type="number"
+                                                   name="nominal_bayar[{{ a.id }}]"
+                                                   value=""
+                                                   min="0"
+                                                   step="1"
+                                                   class="form-control form-control-sm text-end member-nominal"
+                                                   aria-label="Nominal bayar {{ a.nama_anggota }}"
+                                                   placeholder="{% if isLunas %}Lunas{% else %}{{ a.nominal_standar > 0 ? a.nominal_standar|number_format(0,',','.') : '0' }}{% endif %}"
+                                                   {% if lockReason %}disabled title="Periode terkunci"{% elseif isLunas %}disabled title="Anggota sudah lunas"{% endif %}
+                                                   data-default-val="{{ isLunas ? 0 : (a.nominal_standar ?: 0) }}">
+                                            <div class="overpay-badge"><i class="ph-fill ph-warning me-1"></i>Maksimal: Rp {{ a.sisa|number_format(0,',','.') }}</div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                            <tr id="emptySearchRow" class="d-none">
+                                <td colspan="9" class="text-center py-4 text-muted">
+                                    <i class="ph ph-magnifying-glass fs-2 mb-1 d-block opacity-50"></i>
+                                    Tidak ada anggota yang sesuai dengan kata kunci pencarian.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Footer & Shortcut Bar -->
+                <div class="card-footer d-flex flex-wrap justify-content-between align-items-center gap-3 py-2 px-3">
+                    <div class="d-flex align-items-center gap-2 text-muted small flex-wrap">
+                        <span class="fw-semibold text-2"><i class="ph ph-keyboard me-1 text-primary"></i>Pintasan:</span>
+                        <span><kbd class="kbd-hint">Ctrl+S</kbd> Simpan</span>
+                        <span><kbd class="kbd-hint">Ctrl+Shift+S</kbd> Simpan &amp; Lanjut</span>
+                        <span><kbd class="kbd-hint">/</kbd> Cari</span>
+                        <span><kbd class="kbd-hint">Enter</kbd> / <kbd class="kbd-hint">↓</kbd> Baris Berikutnya</span>
+                        <span><kbd class="kbd-hint">Alt+A</kbd> Semua</span>
+                        <span><kbd class="kbd-hint">Alt+C</kbd> Reset</span>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <button type="submit" name="submit_action" value="continue_same_reseller" id="btnSubmitContinue" class="btn btn-outline-primary btn-sm px-3 fw-medium" title="Simpan & Lanjutkan Reseller Sama (Ctrl+Shift+S)"{% if lockReason %} disabled{% endif %}>
+                            <i class="ph ph-arrows-clockwise me-1"></i> Simpan &amp; Lanjutkan Reseller Sama <kbd class="kbd-hint ms-1">Ctrl+Shift+S</kbd>
+                        </button>
+                        <button type="submit" name="submit_action" value="detail" id="btnSubmitDetail" class="btn btn-primary btn-sm px-4 fw-medium" title="Simpan Kolektif (Ctrl+S)"{% if lockReason %} disabled{% endif %}>
+                            <i class="ph ph-floppy-disk me-1"></i> Simpan Kolektif <kbd class="kbd-hint ms-1">Ctrl+S</kbd>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+
+    {% else %}
+        <div class="card mt-3">
+            <div class="empty py-5">
+                <i class="ph ph-user text-warning fs-1"></i>
+                <div class="empty-title mt-3">Tidak ada anggota aktif</div>
+                <div class="empty-sub">Reseller ini belum memiliki anggota aktif pada kategori yang dipilih.</div>
+            </div>
+        </div>
+    {% endif %}
+
+{% else %}
+    <div class="card">
+        <div class="empty py-5">
+            <i class="ph ph-arrow-circle-up"></i>
+            <div class="empty-title">Pilih reseller terlebih dahulu</div>
+            <div class="empty-sub">Pilih reseller dan periode di atas, lalu klik <strong>Tampilkan Anggota</strong>.</div>
+        </div>
+    </div>
+{% endif %}
+
+<!-- Modal konfirmasi -->
+<div class="modal fade" id="appModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius: 16px; border: none; box-shadow: 0 8px 32px rgba(0,0,0,0.15);">
+            <div class="modal-header" style="border-bottom: 2px solid var(--border); padding: 20px 24px;">
+                <h5 class="modal-title" id="appModalTitle" style="font-weight: 700; font-size: 18px;">Konfirmasi</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+            </div>
+            <div class="modal-body" id="appModalBody" style="padding: 24px; font-size: 14px; line-height: 1.6;"></div>
+            <div class="modal-footer" style="border-top: 2px solid var(--border); padding: 16px 24px;">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="appModalCancel">Batal</button>
+                <button type="button" class="btn btn-primary" id="appModalOk">OK</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const filterForm       = document.getElementById('filterForm');
+    const resellerSel      = document.getElementById('resellerSelect');
+    const kategoriSel      = document.getElementById('kategoriSelect');
+    const tahunSel         = document.getElementById('tahunSelect');
+    const bulanSel         = document.getElementById('bulanSelect');
+    const katLoad          = document.getElementById('katLoad');
+    const btnFilterSubmit  = document.getElementById('btnFilterSubmit');
+    const filterNotice     = document.getElementById('filterChangedNotice');
+    const formKolektif     = document.getElementById('formKolektif');
+
+    function notifyFilterChanged() {
+        if (formKolektif) {
+            if (filterNotice) filterNotice.classList.remove('d-none');
+            if (btnFilterSubmit) {
+                btnFilterSubmit.classList.remove('btn-primary');
+                btnFilterSubmit.classList.add('btn-warning');
+            }
+        }
+    }
+
+    resellerSel?.addEventListener('change', function () {
+        const rid = this.value;
+        notifyFilterChanged();
+        if (!rid) {
+            kategoriSel.innerHTML = '<option value="0">Semua</option>';
+            return;
+        }
+        if (katLoad) katLoad.classList.remove('d-none');
+        kategoriSel.disabled = true;
+        fetch('{{ path("app_kolektif_kategori_by_reseller") }}?reseller_id=' + encodeURIComponent(rid))
+            .then(r => r.json())
+            .then(data => {
+                kategoriSel.innerHTML = '<option value="0">Semua (reseller ini)</option>';
+                data.forEach(item => {
+                    const o = document.createElement('option');
+                    o.value = item.id;
+                    o.textContent = item.nama_kategori + (item.count_anggota > 0 ? ` (${item.count_anggota})` : '');
+                    kategoriSel.appendChild(o);
+                });
+            })
+            .catch(() => {})
+            .finally(() => {
+                if (katLoad) katLoad.classList.add('d-none');
+                kategoriSel.disabled = false;
+            });
+    });
+
+    kategoriSel?.addEventListener('change', notifyFilterChanged);
+    tahunSel?.addEventListener('change', notifyFilterChanged);
+    bulanSel?.addEventListener('change', notifyFilterChanged);
+
+    /* ---- Instant search ---- */
+    const searchInput = document.getElementById('quickSearchAnggota');
+    const searchBadge = document.getElementById('searchCountBadge');
+    const emptyRow    = document.getElementById('emptySearchRow');
+
+    searchInput?.addEventListener('input', function () {
+        const q = this.value.toLowerCase().trim();
+        let visibleCount = 0;
+        document.querySelectorAll('.member-row').forEach(row => {
+            const name = (row.querySelector('.fw-semibold')?.textContent || '').toLowerCase();
+            const codeCell = row.querySelectorAll('td')[2];
+            const code = (codeCell?.querySelector('.fs-xs.font-monospace')?.textContent || '').toLowerCase();
+            const match = !q || name.includes(q) || code.includes(q);
+            row.style.display = match ? '' : 'none';
+            if (match) visibleCount++;
+        });
+
+        if (q) {
+            if (searchBadge) {
+                searchBadge.textContent = `${visibleCount} ditemukan`;
+                searchBadge.classList.remove('d-none');
+            }
+            if (emptyRow) emptyRow.classList.toggle('d-none', visibleCount > 0);
+        } else {
+            if (searchBadge) searchBadge.classList.add('d-none');
+            if (emptyRow) emptyRow.classList.add('d-none');
+        }
+    });
+
+    searchInput?.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') {
+            this.value = '';
+            this.dispatchEvent(new Event('input'));
+            this.blur();
+        } else if (e.key === 'Enter' || e.key === 'ArrowDown') {
+            e.preventDefault();
+            const firstInp = Array.from(nominalInputs).find(inp => {
+                const r = inp.closest('.member-row');
+                return !inp.disabled && (!r || r.style.display !== 'none');
+            });
+            if (firstInp) {
+                firstInp.focus();
+                firstInp.select();
+            }
+        }
+    });
+
+    /* ---- Live calc ---- */
+    const checkMaster    = document.getElementById('checkMaster');
+    const memberChecks   = document.querySelectorAll('.member-check');
+    const nominalInputs  = document.querySelectorAll('.member-nominal');
+    const countEl        = document.getElementById('totalCheckedCount');
+    const nominalEl      = document.getElementById('totalNominalDisplay');
+    const sisaEl         = document.getElementById('totalSisaDisplay');
+    const submitActInput = document.getElementById('submitActionInput');
+    const btnContinue    = document.getElementById('btnSubmitContinue');
+    const btnDetail      = document.getElementById('btnSubmitDetail');
+    const btnSubmitTop   = document.getElementById('btnSubmitTop');
+
+    btnContinue?.addEventListener('click', () => { if (submitActInput) submitActInput.value = 'continue_same_reseller'; });
+    btnDetail?.addEventListener('click', () => { if (submitActInput) submitActInput.value = 'detail'; });
+    btnSubmitTop?.addEventListener('click', () => { if (submitActInput) submitActInput.value = 'detail'; });
+
+    const fmt = n => 'Rp ' + n.toLocaleString('id-ID');
+
+    function recalc() {
+        let count = 0, nominal = 0, sisa = 0;
+        document.querySelectorAll('.member-row').forEach(row => {
+            const chk     = row.querySelector('.member-check');
+            const input   = row.querySelector('.member-nominal');
+            const badge   = row.querySelector('.overpay-badge');
+            const rowSisa = parseFloat(row.dataset.sisa) || 0;
+            const target  = parseFloat(row.dataset.target) || 0;
+            const val     = parseInt(input.value) || 0;
+
+            if (chk?.checked) {
+                count++;
+                nominal += val;
+                sisa    += rowSisa;
+                row.classList.add('is-checked');
+            } else {
+                row.classList.remove('is-checked');
+            }
+
+            // Indikator overpay
+            if (target > 0 && val > rowSisa && val > 0) {
+                input.classList.add('is-overpay');
+                if (badge) badge.style.display = 'block';
+            } else {
+                input.classList.remove('is-overpay');
+                if (badge) badge.style.display = 'none';
+            }
+        });
+        if (countEl)   countEl.textContent  = count;
+        if (nominalEl) nominalEl.textContent = fmt(nominal);
+        if (sisaEl)    sisaEl.textContent    = fmt(sisa);
+    }
+
+    checkMaster?.addEventListener('change', function () {
+        memberChecks.forEach(c => {
+            const row = c.closest('.member-row');
+            if (!c.disabled && (!row || row.style.display !== 'none')) {
+                c.checked = this.checked;
+            }
+        });
+        recalc();
+    });
+
+    memberChecks.forEach(chk => {
+        chk.addEventListener('change', function () {
+            const row   = this.closest('.member-row');
+            const input = row.querySelector('.member-nominal');
+            if (this.checked) {
+                input.focus();
+                input.select();
+            }
+            // Uncheck keeps value (don't clear input)
+            recalc();
+        });
+    });
+
+    nominalInputs.forEach(input => {
+        input.addEventListener('input', function () {
+            const row = this.closest('.member-row');
+            const chk = row.querySelector('.member-check');
+            if (chk && !chk.disabled) chk.checked = (parseInt(this.value) || 0) > 0;
+            recalc();
+        });
+
+        // Navigasi keyboard cepat
+        input.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                this.value = '';
+                const row = this.closest('.member-row');
+                const chk = row ? row.querySelector('.member-check') : null;
+                if (chk) chk.checked = false;
+                recalc();
+                return;
+            }
+
+            if (e.key === 'Enter' || e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                const visibleInputs = Array.from(nominalInputs).filter(inp => {
+                    const r = inp.closest('.member-row');
+                    return !inp.disabled && (!r || r.style.display !== 'none');
+                });
+                const curIdx = visibleInputs.indexOf(this);
+                if (curIdx === -1) return;
+
+                if (e.key === 'Enter' || e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    if (curIdx < visibleInputs.length - 1) {
+                        visibleInputs[curIdx + 1].focus();
+                        visibleInputs[curIdx + 1].select();
+                    }
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    if (curIdx > 0) {
+                        visibleInputs[curIdx - 1].focus();
+                        visibleInputs[curIdx - 1].select();
+                    }
+                }
+            }
+        });
+    });
+
+    document.getElementById('btnSelectAll')?.addEventListener('click', () => {
+        memberChecks.forEach(c => {
+            const row = c.closest('.member-row');
+            if (!c.disabled && (!row || row.style.display !== 'none')) {
+                c.checked = true;
+            }
+        });
+        if (checkMaster) checkMaster.checked = true;
+        recalc();
+    });
+
+    document.getElementById('btnUnselectAll')?.addEventListener('click', () => {
+        memberChecks.forEach(c => {
+            const row = c.closest('.member-row');
+            if (!row || row.style.display !== 'none') {
+                c.checked = false;
+                const input = row?.querySelector('.member-nominal');
+                if (input) input.value = '';
+            }
+        });
+        if (checkMaster) checkMaster.checked = false;
+        recalc();
+    });
+
+    // Global keyboard shortcuts
+    window.addEventListener('keydown', function (e) {
+        const isCtrlOrCmd = e.ctrlKey || e.metaKey;
+        const isShift = e.shiftKey;
+        const isAlt = e.altKey;
+
+        // 1. Simpan (Ctrl+S / Cmd+S atau Ctrl+Shift+S)
+        if (isCtrlOrCmd && (e.key === 's' || e.key === 'S')) {
+            e.preventDefault();
+            if (!formKolektif) return;
+            if (btnSubmitTop && btnSubmitTop.disabled) return;
+            if (isShift) {
+                if (submitActInput) submitActInput.value = 'continue_same_reseller';
+                if (btnContinue && formKolektif.requestSubmit) {
+                    formKolektif.requestSubmit(btnContinue);
+                } else {
+                    formKolektif.submit();
+                }
+            } else {
+                if (submitActInput) submitActInput.value = 'detail';
+                const targetBtn = btnDetail || btnSubmitTop;
+                if (targetBtn && formKolektif.requestSubmit) {
+                    formKolektif.requestSubmit(targetBtn);
+                } else {
+                    formKolektif.submit();
+                }
+            }
+            return;
+        }
+
+        // 2. Alt+A (Pilih Semua) & Alt+C (Kosongkan)
+        if (isAlt && (e.key === 'a' || e.key === 'A')) {
+            e.preventDefault();
+            document.getElementById('btnSelectAll')?.click();
+            return;
+        }
+        if (isAlt && (e.key === 'c' || e.key === 'C')) {
+            e.preventDefault();
+            document.getElementById('btnUnselectAll')?.click();
+            return;
+        }
+
+        // 3. "/" untuk fokus ke pencarian anggota
+        if (e.key === '/' && !isCtrlOrCmd && !isAlt) {
+            const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
+            if (activeTag !== 'input' && activeTag !== 'textarea' && activeTag !== 'select') {
+                e.preventDefault();
+                if (searchInput) {
+                    searchInput.focus();
+                    searchInput.select();
+                }
+                return;
+            }
+        }
+
+        // 4. Alt+L untuk "Tampilkan Anggota"
+        if (isAlt && (e.key === 'l' || e.key === 'L')) {
+            e.preventDefault();
+            btnFilterSubmit?.click();
+            return;
+        }
+    });
+
+    // Modal helper functions
+    function showModal(title, body, showCancel, onOk) {
+        const modal = document.getElementById('appModal');
+        document.getElementById('appModalTitle').textContent = title;
+        document.getElementById('appModalBody').innerHTML = body;
+        document.getElementById('appModalCancel').style.display = showCancel ? '' : 'none';
+        const okBtn = document.getElementById('appModalOk');
+        okBtn.onclick = () => { bootstrap.Modal.getInstance(modal).hide(); if (onOk) onOk(); };
+        new bootstrap.Modal(modal).show();
+    }
+
+    formKolektif?.addEventListener('submit', function (e) {
+        let count = 0, total = 0;
+        let overpayList = [];
+
+        document.querySelectorAll('.member-row').forEach(row => {
+            const chk     = row.querySelector('.member-check');
+            const input   = row.querySelector('.member-nominal');
+            const target  = parseFloat(row.dataset.target) || 0;
+            const rowSisa = parseFloat(row.dataset.sisa) || 0;
+            const name    = row.querySelector('.fw-semibold')?.textContent?.trim() || 'Anggota';
+            const codeCell = row.querySelectorAll('td')[2];
+            const code    = (codeCell?.querySelector('.fs-xs.font-monospace')?.textContent || '').trim();
+
+            if (chk?.checked && !chk.disabled) {
+                const v = parseInt(input.value) || 0;
+                if (v > 0) {
+                    count++;
+                    total += v;
+
+                    if (target > 0 && v > rowSisa) {
+                        const lebih = v - rowSisa;
+                        overpayList.push(`• ${name} (${code}): Bayar Rp ${v.toLocaleString('id-ID')} > Sisa Rp ${rowSisa.toLocaleString('id-ID')} (Lebih Rp ${lebih.toLocaleString('id-ID')})`);
+                    }
+                }
+            }
+        });
+
+        if (overpayList.length > 0) {
+            e.preventDefault();
+            showModal('Setoran Ditolak', '<p>Pembayaran melebihi sisa target anggota berikut:</p><ul>' + overpayList.map(x => '<li>'+x.slice(2)+'</li>').join('') + '</ul><p>Harap kurangi nominal setoran agar tidak melebihi sisa target.</p>', false, null);
+            return;
+        }
+
+        if (count === 0 || total === 0) {
+            e.preventDefault();
+            showModal('Peringatan', '<p>Pilih setidaknya satu anggota dengan nominal > 0.</p>', false, null);
+            return;
+        }
+
+        e.preventDefault();
+        showModal('Konfirmasi Simpan', '<p>Simpan batch?</p><ul><li>'+count+' anggota</li><li>Total: Rp '+total.toLocaleString('id-ID')+'</li></ul>', true, () => {
+            // Disable buttons to prevent double-submit
+            const btns = formKolektif.querySelectorAll('button[type=submit]');
+            btns.forEach(b => b.disabled = true);
+            formKolektif.submit();
+        });
+    });
+
+    window.addEventListener('beforeunload', function (e) {
+        let hasInput = false;
+        nominalInputs.forEach(inp => { if (inp.value) hasInput = true; });
+        if (hasInput) { e.preventDefault(); e.returnValue = ''; }
+    });
+
+    // Export CSV function
+    document.getElementById('btnExportCSV')?.addEventListener('click', function () {
+        const rows = document.querySelectorAll('.member-row:not([style*="display: none"])');
+        if (rows.length === 0) {
+            showModal('Export CSV', '<p>Tidak ada data untuk di-export.</p>', false, null);
+            return;
+        }
+
+        // Get reseller name and period
+        const resellerName = document.querySelector('.badge.text-muted.border.font-monospace')?.textContent?.trim() || 'Reseller';
+        const period = '{{ periode|format_periode(false) }}';
+
+        // Build CSV content
+        let csv = 'ID,Nama Anggota,Kode Anggota,Kategori,Target,Sudah Bayar,Sisa,Nominal Bayar\n';
+        let totalBayar = 0;
+        let countBayar = 0;
+
+        rows.forEach(row => {
+            const id = row.dataset.memberId;
+            const name = row.querySelector('.fw-semibold')?.textContent?.trim() || '';
+            const code = row.querySelector('.fs-xs.font-monospace')?.textContent?.trim() || '-';
+            const category = row.querySelectorAll('td')[3]?.querySelector('.fw-medium')?.textContent?.trim() || '-';
+            const target = parseFloat(row.dataset.target) || 0;
+            const sudah = parseFloat(row.dataset.sudah) || 0;
+            const sisa = parseFloat(row.dataset.sisa) || 0;
+            const input = row.querySelector('.member-nominal');
+            const bayar = parseInt(input?.value) || 0;
+
+            if (bayar > 0) {
+                totalBayar += bayar;
+                countBayar++;
+            }
+
+            csv += `${id},"${name}","${code}","${category}",${target},${sudah},${sisa},${bayar}\n`;
+        });
+
+        csv += `\nTotal,${countBayar} anggota,,,,,,,,${totalBayar}\n`;
+
+        // Download CSV
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `Batch_${resellerName.replace(/\s+/g, '_')}_${period.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        showModal('Export Berhasil', `<p>File CSV berhasil di-download.</p><ul><li>${countBayar} anggota dengan nominal</li><li>Total: Rp ${totalBayar.toLocaleString('id-ID')}</li></ul>`, false, null);
+    });
+
+    // Print function
+    document.getElementById('btnExportPDF')?.addEventListener('click', function () {
+        const rows = document.querySelectorAll('.member-row:not([style*="display: none"])');
+        if (rows.length === 0) {
+            showModal('Print', '<p>Tidak ada data untuk dicetak.</p>', false, null);
+            return;
+        }
+        window.print();
+    });
+
+    recalc();
+});
+</script>
+{% endblock %}
