@@ -1981,11 +1981,42 @@ html:root body .dashboard-stat .stat-sub {
 }
 html:root body .dashboard-stat {
     border-radius: 16px !important;
-    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease !important;
+    position: relative !important;
+    overflow: hidden !important;
+    transform-style: preserve-3d !important;
+    transition: transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.28s ease !important;
+    box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.22), 0 0 0 1px rgba(255, 255, 255, 0.12) inset !important;
+    will-change: transform;
 }
+
+/* 3D Holographic light sheen reflection */
+.dashboard-stat::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -70%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(
+        115deg,
+        transparent 38%,
+        rgba(255, 255, 255, 0.12) 48%,
+        rgba(255, 255, 255, 0.28) 50%,
+        rgba(255, 255, 255, 0.12) 52%,
+        transparent 62%
+    );
+    transform: rotate(-15deg) translateY(-100%);
+    transition: transform 0.65s cubic-bezier(0.16, 1, 0.3, 1);
+    pointer-events: none;
+    z-index: 1;
+}
+.dashboard-stat:hover::after {
+    transform: rotate(-15deg) translateY(60%);
+}
+
 html:root body .dashboard-stat:hover {
-    transform: translateY(-2px) !important;
-    box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.2) !important;
+    transform: perspective(1000px) translateY(-6px) rotateX(4deg) rotateY(-2deg) translateZ(8px) !important;
+    box-shadow: 0 18px 36px -6px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.22) inset !important;
 }
 
 /* Dark mode dashboard stats: Rich Navy with Gold accents */
@@ -1996,7 +2027,7 @@ html.dark body .dashboard-stat.s-info {
     background: linear-gradient(145deg, #1e293b 0%, #0f172a 100%) !important;
     border: 1px solid rgba(212, 165, 116, 0.20) !important;
     border-top: 3px solid #d4a574 !important;
-    box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.5) !important;
+    box-shadow: 0 8px 24px -2px rgba(0, 0, 0, 0.6) !important;
 }
 html.dark body .dashboard-stat .stat-number {
     color: #f1f5f9 !important;
@@ -2009,14 +2040,72 @@ html.dark body .dashboard-stat .stat-sub {
     color: #94a3b8 !important;
 }
 html.dark body .dashboard-stat:hover {
-    border-color: rgba(212, 165, 116, 0.40) !important;
-    box-shadow: 0 8px 28px -2px rgba(0, 0, 0, 0.7), 0 0 15px rgba(212, 165, 116, 0.15) !important;
+    border-color: rgba(212, 165, 116, 0.45) !important;
+    transform: perspective(1000px) translateY(-6px) rotateX(4deg) rotateY(-2deg) translateZ(8px) !important;
+    box-shadow: 0 20px 40px -4px rgba(0, 0, 0, 0.8), 0 0 18px rgba(212, 165, 116, 0.22) !important;
 }
+
+/* 3D Floating Icon Badges */
+.stat-3d-badge {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.24);
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    font-size: 20px;
+    color: #ffffff;
+    transform-style: preserve-3d;
+    transform: translateZ(24px);
+    transition: transform 0.3s ease, background 0.3s ease, box-shadow 0.3s ease;
+    z-index: 2;
+}
+html.dark .stat-3d-badge {
+    background: rgba(212, 165, 116, 0.12);
+    border: 1px solid rgba(212, 165, 116, 0.35);
+    color: #d4a574;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(212, 165, 116, 0.4);
+}
+.dashboard-stat:hover .stat-3d-badge {
+    transform: translateZ(36px) scale(1.12);
+}
+
+/* 3D Continuous Floating Keyframes per Payment/Financial Type */
+@keyframes anim3dVault {
+    0%, 100% { transform: translateZ(24px) translateY(0) rotateY(0deg); }
+    50% { transform: translateZ(32px) translateY(-4px) rotateY(18deg); }
+}
+@keyframes anim3dCoins {
+    0%, 100% { transform: translateZ(24px) translateY(0) rotateY(0deg); }
+    50% { transform: translateZ(34px) translateY(-3px) rotateY(180deg); }
+}
+@keyframes anim3dHourglass {
+    0%, 100% { transform: translateZ(24px) rotateZ(0deg); }
+    25% { transform: translateZ(30px) rotateZ(12deg); }
+    75% { transform: translateZ(30px) rotateZ(-12deg); }
+}
+@keyframes anim3dUsers {
+    0%, 100% { transform: translateZ(24px) scale(1) rotateY(0deg); }
+    50% { transform: translateZ(32px) scale(1.08) rotateY(-14deg); }
+}
+
+.anim-3d-vault { animation: anim3dVault 4s ease-in-out infinite; }
+.anim-3d-coins { animation: anim3dCoins 5s cubic-bezier(0.4, 0, 0.2, 1) infinite; }
+.anim-3d-hourglass { animation: anim3dHourglass 4.5s ease-in-out infinite; }
+.anim-3d-users { animation: anim3dUsers 4s ease-in-out infinite; }
 
 /* ── DASHBOARD GRID: 1 ROW LAYOUT ── */
 .dashboard-grid {
     display: grid !important;
     grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    perspective: 1200px;
+}
     gap: 12px;
 }
 @media (max-width: 991px) {

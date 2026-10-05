@@ -195,6 +195,7 @@
     <section class="dashboard-grid mb-3" aria-label="Ringkasan utama">
         <article class="card dashboard-stat p-3 s-accent">
             <span class="stat-label">Total target</span>
+            <div class="stat-3d-badge anim-3d-vault" title="Total target kas"><i class="ph ph-vault"></i></div>
             <div>
                 <div class="stat-number">Rp {{ totalTarget|number_format(0, ',', '.') }}</div>
                 <div class="stat-caption mt-1">{{ totalAnggota|number_format(0, ',', '.') }} anggota, {{ totalKategori }} paket</div>
@@ -202,6 +203,7 @@
         </article>
         <article class="card dashboard-stat p-3 s-success">
             <span class="stat-label">Sudah terkumpul</span>
+            <div class="stat-3d-badge anim-3d-coins" title="Sudah terkumpul / setoran masuk"><i class="ph ph-hand-coins"></i></div>
             <div>
                 <div class="stat-number text-success">Rp {{ totalSudahBayar|number_format(0, ',', '.') }}</div>
                 <div class="dashboard-capaian-bar mt-2" role="progressbar" aria-label="Capaian target" aria-valuenow="{{ min(persenCapaian, 100) }}" aria-valuemin="0" aria-valuemax="100"><span class="progress-gradient-success" style="width:{{ min(persenCapaian, 100) }}%"></span></div>
@@ -210,6 +212,7 @@
         </article>
         <article class="card dashboard-stat p-3 s-warning">
             <span class="stat-label">Sisa target</span>
+            <div class="stat-3d-badge anim-3d-hourglass" title="Sisa tagihan berjalan"><i class="ph ph-hourglass-medium"></i></div>
             <div>
                 <div class="stat-number text-warning">Rp {{ sisaTarget|number_format(0, ',', '.') }}</div>
                 <div class="stat-caption mt-1">{{ anggotaBelumLunas|number_format(0, ',', '.') }} anggota belum lunas</div>
@@ -217,6 +220,7 @@
         </article>
         <article class="card dashboard-stat p-3 s-info">
             <span class="stat-label">Anggota aktif</span>
+            <div class="stat-3d-badge anim-3d-users" title="Kartu anggota aktif"><i class="ph ph-users-three"></i></div>
             <div>
                 <div class="stat-number">{{ anggotaAktif|number_format(0, ',', '.') }}</div>
                 <div class="stat-caption mt-1">dari {{ totalAnggota|number_format(0, ',', '.') }} anggota, {{ totalReseller }} reseller</div>
@@ -589,4 +593,24 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 </script>
 {% endif %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var cards = document.querySelectorAll('.dashboard-stat');
+    cards.forEach(function (card) {
+        var isHovered = false;
+        card.addEventListener('mouseenter', function () { isHovered = true; });
+        card.addEventListener('mousemove', function (e) {
+            if (!isHovered) return;
+            var r = card.getBoundingClientRect();
+            var x = (e.clientX - r.left) / r.width - 0.5;
+            var y = (e.clientY - r.top) / r.height - 0.5;
+            card.style.transform = 'perspective(1000px) translateY(-6px) rotateX(' + (-y * 10).toFixed(2) + 'deg) rotateY(' + (x * 10).toFixed(2) + 'deg) translateZ(8px)';
+        });
+        card.addEventListener('mouseleave', function () {
+            isHovered = false;
+            card.style.transform = '';
+        });
+    });
+});
+</script>
 {% endblock %}
