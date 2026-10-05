@@ -11,13 +11,14 @@
 :root {
     --sidebar-w: 248px;
 
-    /* surfaces (warm light background) */
+    /* surfaces (harmonized teal shade gradations) */
+    --canvas:         #f0f5f4;
     --bg:             #ffffff;
-    --bg-sub:         #f8f8f5;
-    --bg-hover:       #f0f0eb;
-    --bg-active:      #e8e8e3;
-    --border:         #e8e8e3;
-    --border-strong:  #d8d8d3;
+    --bg-sub:         #f0f5f4;
+    --bg-hover:       #e3ecea;
+    --bg-active:      #d5e2df;
+    --border:         #dbe5e3;
+    --border-strong:  #c2d5d1;
 
     /* text (dark hierarchy on light background) */
     --text:           #1a1a1a;
@@ -107,18 +108,20 @@
                       transform 0.25s ease;
 
     /* hero */
-    --hero-bg:        linear-gradient(180deg, #f8f8f5 0%, #f0f0eb 100%);
-    --hero-bg-light:  linear-gradient(180deg, #ffffff 0%, #f8f8f5 100%);
+    --hero-bg:        linear-gradient(180deg, #f0f5f4 0%, #e2ecea 100%);
+    --hero-bg-light:  linear-gradient(180deg, #ffffff 0%, #f0f5f4 100%);
 }
 
 /* ── TOKENS — DARK THEME (Unified Navy+Gold) ─────────────────────────────── */
 html.dark {
-    --bg:             #0f172a;
-    --bg-sub:         #1e293b;
-    --bg-hover:       #334155;
-    --bg-active:      #475569;
-    --border:         #334155;
-    --border-strong:  #475569;
+    /* surfaces (harmonized navy shade gradations) */
+    --canvas:         #0b1120;
+    --bg:             #151f32;
+    --bg-sub:         #0f172a;
+    --bg-hover:       #1e2c45;
+    --bg-active:      #263857;
+    --border:         rgba(212, 165, 116, 0.14);
+    --border-strong:  rgba(212, 165, 116, 0.28);
 
     --text:           #f1f5f9;
     --text-2:         #94a3b8;
@@ -126,12 +129,12 @@ html.dark {
 
     --accent:         #d4a574;
     --accent-hover:   #e0b687;
-    --accent-fg:      #0f172a;
+    --accent-fg:      #0b1120;
     --accent-soft:    rgba(212, 165, 116, 0.10);
     --ring:           rgba(212, 165, 116, 0.30);
 
-    --secondary:        #1e293b;
-    --secondary-hover:  #334155;
+    --secondary:        #0f172a;
+    --secondary-hover:  #1e2c45;
     --secondary-fg:     #f1f5f9;
     --secondary-soft:   rgba(212, 165, 116, 0.08);
     --secondary-ring:   rgba(212, 165, 116, 0.20);
@@ -164,7 +167,7 @@ html.dark {
     --shadow-md:      0 8px 20px rgba(0, 0, 0, 0.5);
     --shadow-lg:      var(--elevation-4);
 
-    --hero-bg:        linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+    --hero-bg:        linear-gradient(180deg, #151f32 0%, #0b1120 100%);
 }
 
 html {
@@ -234,11 +237,15 @@ button, a, input, select, textarea { touch-action: manipulation; }
 
 body {
     font-family: var(--font-sans);
-    background: var(--bg-sub);
+    background: var(--canvas, var(--bg-sub));
     color: var(--text);
     font-size: 13px;
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
+}
+
+html.dark body {
+    background: var(--canvas, #0b1120);
 }
 
 @keyframes fadeInUp {
@@ -1747,9 +1754,9 @@ fieldset:disabled .btn {
     --bs-danger-rgb:    168, 90, 90;
     --bs-info-rgb:      90, 122, 138;
     --bs-secondary-rgb: 122, 122, 122;
-    --bs-light-rgb:     248, 248, 245;
+    --bs-light-rgb:     240, 245, 244;
     --bs-dark-rgb:      26, 26, 26;
-    --bs-border-color:  #e8e8e3;
+    --bs-border-color:  #dbe5e3;
     --bs-link-color-rgb:       45, 74, 74;
     --bs-link-hover-color-rgb: 61, 90, 90;
     --bs-code-color:           var(--accent-hover);
@@ -1791,7 +1798,7 @@ html.dark {
     --bs-secondary-rgb: 148, 163, 184;
     --bs-light-rgb:     15, 23, 42;
     --bs-dark-rgb:      241, 245, 249;
-    --bs-border-color:  #334155;
+    --bs-border-color:  rgba(212, 165, 116, 0.14);
 
     --bs-link-color-rgb:       212, 165, 116;
     --bs-link-hover-color-rgb: 224, 182, 135;
@@ -1799,7 +1806,7 @@ html.dark {
     --bs-body-color-rgb:      241, 245, 249;
     --bs-secondary-color-rgb: 148, 163, 184;
     --bs-emphasis-color-rgb:  241, 245, 249;
-    --bs-body-bg-rgb:         15, 23, 42;
+    --bs-body-bg-rgb:         11, 17, 32;
 }
 
 /* ─ SIDEBAR DARK MODE OVERRIDE (Navy+Gold) ── */
