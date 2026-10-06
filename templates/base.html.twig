@@ -10,7 +10,7 @@
     <link href="{{ asset('assets/css/bootstrap.min.css') }}" rel="stylesheet">
     <link href="{{ asset('assets/icons/phosphor.css') }}?v=2" rel="stylesheet">
     <link href="{{ asset('assets/css/fonts.css') }}" rel="stylesheet">
-    <link href="{{ asset('assets/css/theme-v4.css') }}?v=upgrade-20261006A" rel="stylesheet">
+    <link href="{{ asset('assets/css/theme-v4.css') }}?v=upgrade-20261006B" rel="stylesheet">
     <script>
         (function() {
             const sysTheme = '{{ current_theme() }}';
@@ -60,83 +60,83 @@
         <a href="{{ path('app_dashboard') }}"
            class="sb-link {% if app.request.attributes.get('_route') == 'app_dashboard' %}active{% endif %}">
             <i class="ph ph-grid-four"></i>
-            <span class="sb-link-label">Dashboard</span>
+            <span class="sb-link-label">Pusat Kendali</span>
         </a>
 
         <div class="sb-label mt-2">Keuangan</div>
         <a href="{{ path('app_kolektif_input') }}"
            class="sb-link {% if app.request.attributes.get('_route') == 'app_kolektif_input' %}active{% endif %}">
             <i class="ph ph-pencil-simple"></i>
-            <span class="sb-link-label">Input Kolektif</span>
+            <span class="sb-link-label">Setoran Kolektif</span>
         </a>
         <a href="{{ path('app_transaksi_index') }}"
            class="sb-link {% if 'app_transaksi' in app.request.attributes.get('_route') %}active{% endif %}">
             <i class="ph ph-arrows-left-right"></i>
-            <span class="sb-link-label">Transaksi</span>
+            <span class="sb-link-label">Riwayat Mutasi</span>
         </a>
         <a href="{{ path('app_kolektif_index') }}"
            class="sb-link {% if app.request.attributes.get('_route') in ['app_kolektif_index','app_kolektif_detail'] %}active{% endif %}">
             <i class="ph ph-stack"></i>
-            <span class="sb-link-label">Batch Kolektif</span>
+            <span class="sb-link-label">Daftar Batch</span>
         </a>
         <a href="{{ path('app_setoran_tujuan_index') }}"
            class="sb-link {% if 'app_setoran_tujuan' in app.request.attributes.get('_route') %}active{% endif %}">
             <i class="ph ph-bank"></i>
-            <span class="sb-link-label">Setoran &amp; Komisi</span>
+            <span class="sb-link-label">Alokasi &amp; Rekening</span>
         </a>
         <a href="{{ path('app_proses_rekap_index') }}"
            class="sb-link {% if 'app_proses_rekap' in app.request.attributes.get('_route') %}active{% endif %}">
             <i class="ph ph-clipboard-text"></i>
-            <span class="sb-link-label">Proses Rekap</span>
+            <span class="sb-link-label">Rekapitulasi Periode</span>
         </a>
         <a href="{{ path('app_laporan_transaksi') }}"
            class="sb-link {% if 'app_laporan_transaksi' in app.request.attributes.get('_route') %}active{% endif %}">
             <i class="ph ph-chart-bar"></i>
-            <span class="sb-link-label">Laporan Transaksi</span>
+            <span class="sb-link-label">Laporan Arus Setoran</span>
         </a>
         <a href="{{ path('app_laporan_komisi') }}"
            class="sb-link {% if 'app_laporan_komisi' in app.request.attributes.get('_route') %}active{% endif %}">
             <i class="ph ph-percent"></i>
-            <span class="sb-link-label">Komisi Reseller</span>
+            <span class="sb-link-label">Rekap Komisi Mitra</span>
         </a>
 
         <div class="sb-label mt-2">Data</div>
         <a href="{{ path('app_anggota_index') }}"
            class="sb-link {% if 'app_anggota' in app.request.attributes.get('_route') %}active{% endif %}">
             <i class="ph ph-users"></i>
-            <span class="sb-link-label">Anggota</span>
+            <span class="sb-link-label">Master Anggota</span>
         </a>
         <a href="{{ path('app_reseller_index') }}"
            class="sb-link {% if 'app_reseller' in app.request.attributes.get('_route') %}active{% endif %}">
             <i class="ph ph-storefront"></i>
-            <span class="sb-link-label">Reseller</span>
+            <span class="sb-link-label">Mitra Reseller</span>
         </a>
         <a href="{{ path('app_kategori_index') }}"
            class="sb-link {% if 'app_kategori' in app.request.attributes.get('_route') %}active{% endif %}">
             <i class="ph ph-tag"></i>
-            <span class="sb-link-label">Kategori</span>
+            <span class="sb-link-label">Paket Tabungan</span>
         </a>
 
         <div class="sb-label mt-2">Sistem</div>
         <a href="{{ path('app_audit_index') }}"
            class="sb-link {% if 'app_audit' in app.request.attributes.get('_route') %}active{% endif %}">
             <i class="ph ph-shield"></i>
-            <span class="sb-link-label">Audit Log</span>
+            <span class="sb-link-label">Log Aktivitas</span>
         </a>
         <a href="{{ path('app_closing_index') }}"
            class="sb-link {% if 'app_closing' in app.request.attributes.get('_route') %}active{% endif %}">
             <i class="ph ph-calendar-check"></i>
-            <span class="sb-link-label">Closing & Lock</span>
+            <span class="sb-link-label">Tutup Buku &amp; Kunci</span>
         </a>
         <a href="{{ path('app_backup_restore') }}"
            class="sb-link {% if 'app_backup' in app.request.attributes.get('_route') %}active{% endif %}">
             <i class="ph ph-hard-drives"></i>
-            <span class="sb-link-label">Backup & Restore</span>
+            <span class="sb-link-label">Cadangan Basis Data</span>
         </a>
         <a href="{{ path('app_settings') }}"
            class="sb-link {% if 'app_settings' in app.request.attributes.get('_route') %}active{% endif %}">
             <i class="ph ph-gear"></i>
-            <span class="sb-link-label">Pengaturan</span>
+            <span class="sb-link-label">Konfigurasi Sistem</span>
         </a>
     </div>
 
@@ -163,7 +163,7 @@
             </button>
             <div class="global-search" id="globalSearch">
                 <i class="ph ph-magnifying-glass"></i>
-                <input type="search" id="gsInput" placeholder="Cari anggota…" aria-label="Cari anggota di aplikasi"
+                <input type="search" id="gsInput" placeholder="Cari anggota atau reseller…" aria-label="Cari anggota atau reseller di aplikasi"
                        autocomplete="off" role="combobox" aria-expanded="false" aria-controls="gsResults" aria-autocomplete="list">
                 <kbd>Ctrl+K</kbd>
                 <div class="gs-results" id="gsResults" role="listbox" aria-label="Hasil pencarian" hidden></div>
