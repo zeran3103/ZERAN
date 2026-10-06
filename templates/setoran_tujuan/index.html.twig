@@ -1,0 +1,501 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Alokasi &amp; Rekening — Zeran Parcel{% endblock %}
+
+{% block stylesheets %}
+<style>
+    .setoran-tujuan { max-width: 1600px; margin: 0 auto; }
+    .setoran-tujuan-filter-card { background: var(--bg-sub); border: 1px solid var(--border); border-radius: var(--radius); }
+    .setoran-tujuan-filter-header { padding: 12px 16px; border-bottom: 1px solid var(--border); }
+    .setoran-tujuan-filter-title { font-size: var(--fs-base); font-weight: 600; color: var(--text); }
+    .setoran-tujuan-filter-body { padding: 16px; }
+    .setoran-tujuan-stat { background: var(--bg-sub); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; position: relative; overflow: hidden; }
+    .setoran-tujuan-stat::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+    .setoran-tujuan-stat.s-blue::before { background: var(--info); }
+    .setoran-tujuan-stat.s-green::before { background: var(--success); }
+    .setoran-tujuan-stat.s-accent::before { background: var(--accent); }
+    .setoran-tujuan-stat.s-warning::before { background: var(--warning); }
+    .setoran-tujuan-stat .stat-label { font-size: var(--fs-xs); font-weight: 600; color: var(--text-3); margin-bottom: 6px; }
+    .setoran-tujuan-stat .stat-val { font-size: clamp(1.1rem, 2vw, 1.4rem); font-weight: 700; color: var(--text); line-height: 1.2; letter-spacing: -.02em; }
+    .setoran-tujuan-stat .stat-val.text-success { color: var(--success); }
+    .setoran-tujuan-table td, .setoran-tujuan-table th { vertical-align: middle; }
+    .st-tab-nav { display: flex; gap: 8px; flex-wrap: wrap; }
+    .st-tab-btn { padding: 8px 16px; border-radius: var(--radius-sm); font-weight: 600; font-size: var(--fs-sm); border: 1px solid var(--border); background: var(--bg-sub); color: var(--text-2); cursor: pointer; transition: all .15s ease; }
+    .st-tab-btn:hover { background: var(--bg-hover); }
+    .st-tab-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+    @media print {
+        .print-only { display: block !important; }
+        .d-print-none, .no-print { display: none !important; }
+        .card { border: none !important; box-shadow: none !important; }
+        .data-table th, .data-table td { padding: 5px 6px !important; font-size: 11px !important; }
+    }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="setoran-tujuan">
+    <div class="page-hd">
+        <div class="page-hd-row">
+            <div>
+                <h1>Alokasi &amp; Rekening</h1>
+                <p>
+                    Perhitungan hak komisi koordinator berdasarkan akumulasi setoran dan skema yang dikonfigurasi.
+                    {% if tahun == 0 and (bulan == '0' or bulan == '') %}
+                        <span class="badge badge-blue ms-1">Seluruh Periode</span>
+                    {% elseif tahun > 0 and (bulan == '0' or bulan == '') %}
+                        <span class="badge badge-blue ms-1">Tahun {{ tahun }}</span>
+                    {% elseif tahun > 0 and bulan != '0' and bulan != '' %}
+                        <span class="badge ms-1">{{ (tahun ~ '-' ~ bulan)|format_periode }}</span>
+                    {% endif %}
+                </p>
+            </div>
+            <div class="d-flex gap-2 d-print-none">
+                <a href="{{ path('app_setoran_tujuan_index', {tahun:0,bulan:0,tab:tab}) }}"
+                   class="btn btn-secondary">
+                    <i class="ph ph-calendar me-1"></i> Semua Periode
+                </a>
+                <button type="button" onclick="window.print()" class="btn btn-secondary">
+                    <i class="ph ph-printer me-1"></i> Cetak
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="setoran-tujuan-filter-card mb-3 d-print-none">
+        <div class="setoran-tujuan-filter-header">
+            <div class="setoran-tujuan-filter-title">Filter Data</div>
+        </div>
+        <div class="setoran-tujuan-filter-body">
+            <form method="get" action="{{ path('app_setoran_tujuan_index') }}" id="filterForm" class="row g-2 align-items-end">
+                <input type="hidden" name="tab" id="tabInput" value="{{ tab }}">
+                <div class="col-6 col-sm-3 col-md-2 col-lg-1">
+                    <label class="form-label text-3 fs-xs fw-semibold mb-1">Tahun</label>
+                    <select name="tahun" id="tahunSelect" class="form-select form-select-sm">
+                        <option value="0" {% if tahun == 0 %}selected{% endif %}>Semua</option>
+                        {% for y in yearsList %}
+                            <option value="{{ y }}" {% if tahun == y %}selected{% endif %}>{{ y }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-6 col-sm-3 col-md-2 col-lg-2">
+                    <label class="form-label text-3 fs-xs fw-semibold mb-1">Bulan</label>
+                    <select name="bulan" id="bulanSelect" class="form-select form-select-sm">
+                        <option value="0" {% if bulan == '0' or bulan == '' %}selected{% endif %}>Semua Bulan</option>
+                        {% for mKey, mName in monthsList %}
+                            <option value="{{ mKey }}" {% if bulan == mKey %}selected{% endif %}>{{ mName }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+                    <label class="form-label text-3 fs-xs fw-semibold mb-1">Koordinator Reseller</label>
+                    <select name="reseller_id" id="resellerSelect" class="form-select form-select-sm">
+                        <option value="0">Semua Reseller</option>
+                        {% for r in resellers %}
+                            <option value="{{ r.id }}" {% if resellerId == r.id %}selected{% endif %}>{{ r.namaReseller }} ({{ r.kodeReseller }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-12 col-sm-6 col-md-4 col-lg-2">
+                    <label class="form-label text-3 fs-xs fw-semibold mb-1">Kategori / Paket <span id="katLoad" class="spinner-border spinner-border-sm text-primary d-none ms-1" style="width:12px;height:12px"></span></label>
+                    <select name="kategori_id" id="kategoriSelect" class="form-select form-select-sm">
+                        <option value="0">Semua Kategori</option>
+                        {% for k in kategoris %}
+                            <option value="{{ k.id }}" {% if kategoriId == k.id %}selected{% endif %}>{{ k.nama_kategori }}{% if k.count_anggota is defined and k.count_anggota > 0 %} ({{ k.count_anggota }}){% endif %}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-12 col-sm-6 col-md-4 col-lg-2">
+                    <label class="form-label text-3 fs-xs fw-semibold mb-1">Hasil Setoran</label>
+                    <select name="setoran_tujuan_id" id="setoranTujuanSelect" class="form-select form-select-sm">
+                        <option value="0">Semua Hasil</option>
+                        {% for s in setoranSchemes %}
+                            <option value="{{ s.id }}" {% if setoranTujuanId == s.id %}selected{% endif %}>{{ s.namaSetoran }} ({{ s.komisiPersen }}%)</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-12 col-sm-6 col-md-4 col-lg-2">
+                    <label class="form-label text-3 fs-xs fw-semibold mb-1">Cari nama/kode</label>
+                    <div class="input-group input-group-sm">
+                        <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Nama/kode...">
+                        <button type="submit" class="btn btn-primary" title="Cari"><i class="ph ph-magnifying-glass"></i></button>
+                        <a href="{{ path('app_setoran_tujuan_index', {tahun:0,bulan:0,tab:tab}) }}" class="btn btn-secondary" title="Reset filter"><i class="ph ph-x"></i></a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="print-only d-none mb-3">
+        <div class="text-center border-bottom pb-2 mb-3">
+            <h3 class="fw-bold mb-1">ZERAN PARCEL — REKAP SETORAN &amp; KOMISI</h3>
+            <div class="text-muted small">
+                Periode:
+                {% if tahun == 0 and (bulan == '0' or bulan == '') %}
+                    Semua Periode
+                {% elseif tahun > 0 and (bulan == '0' or bulan == '') %}
+                    Tahun {{ tahun }}
+                {% else %}
+                    {{ (tahun ~ '-' ~ bulan)|format_periode }}
+                {% endif %}
+                &bull; Dicetak: {{ "now"|date('d/m/Y H:i') }}
+            </div>
+        </div>
+    </div>
+
+    {% if hasFilter %}
+    <div class="row g-3 mb-3">
+        <div class="col-6 col-md-3">
+            <div class="setoran-tujuan-stat s-blue">
+                <div class="stat-label">Total Setoran</div>
+                <div class="stat-val">Rp {{ summary.total_setoran|number_format(0,',','.') }}</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="setoran-tujuan-stat s-accent">
+                <div class="stat-label">Dasar Komisi</div>
+                <div class="stat-val">Rp {{ summary.total_dasar|number_format(0,',','.') }}</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="setoran-tujuan-stat s-green">
+                <div class="stat-label">Total Hak Komisi</div>
+                <div class="stat-val text-success">Rp {{ summary.total_komisi|number_format(0,',','.') }}</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="setoran-tujuan-stat s-warning">
+                <div class="stat-label">Status Pencapaian</div>
+                <div class="stat-val" style="font-size: var(--fs-base);">
+                    <span class="badge badge-green">{{ summary.lolos }} Lolos</span>
+                    {% if summary.tertahan > 0 %}
+                        <span class="badge badge-yellow ms-1">{{ summary.tertahan }} Tertahan</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="st-tab-nav mb-3 d-print-none">
+        <a href="{{ path('app_setoran_tujuan_index', tabBase|merge({tab:'rekap'})) }}"
+           class="st-tab-btn {% if tab == 'rekap' %}active{% endif %}">
+            <i class="ph ph-fill ph-user-check me-1"></i> Rekap Komisi
+            <span class="badge ms-1 {% if tab == 'rekap' %}badge-on-accent{% endif %}">{{ resellerList|length }}</span>
+        </a>
+        <a href="{{ path('app_setoran_tujuan_index', tabBase|merge({tab:'detail'})) }}"
+           class="st-tab-btn {% if tab == 'detail' %}active{% endif %}">
+            <i class="ph ph-list me-1"></i> Rincian Anggota
+            <span class="badge ms-1 {% if tab == 'detail' %}badge-on-accent{% endif %}">{{ memberRows|length }}</span>
+        </a>
+        <a href="{{ path('app_setoran_tujuan_index', tabBase|merge({tab:'skema'})) }}"
+           class="st-tab-btn {% if tab == 'skema' %}active{% endif %}">
+            <i class="ph ph-fill ph-gear me-1"></i> Master Skema
+            <span class="badge ms-1 {% if tab == 'skema' %}badge-on-accent{% endif %}">{{ setoranSchemes|length }}</span>
+        </a>
+    </div>
+
+    {# ========== TAB REKAP ========== #}
+    {% if tab == 'rekap' %}
+        {% if hasFilter %}
+        <div class="card">
+            <div class="table-responsive">
+                <table class="data-table setoran-tujuan-table">
+                    <thead>
+                        <tr>
+                            <th style="width:45px;" class="text-center">#</th>
+                            <th style="width:100px;">Kode</th>
+                            <th>Koordinator Reseller</th>
+                            <th class="text-center" style="width:130px;">Anggota / Trx</th>
+                            <th class="text-end" style="width:150px;">Total Setoran</th>
+                            <th class="text-end" style="width:140px;">Dasar Komisi</th>
+                            <th class="text-end" style="width:150px;">Hak Komisi</th>
+                            <th class="text-center" style="width:130px;">Status Skema</th>
+                            <th class="text-center d-print-none" style="width:80px;">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for r in resellerList %}
+                            <tr class="transition-colors">
+                                <td class="text-center text-muted fw-semibold" style="font-size:0.78rem">{{ loop.index }}</td>
+                                <td><span class="badge">{{ r.kode_reseller }}</span></td>
+                                <td><div class="fw-bold text-1">{{ r.nama_reseller }}</div></td>
+                                <td class="text-center">
+                                    <span class="badge text-dark">{{ r.total_anggota }} anggota</span>
+                                    <div class="fs-xs text-3">{{ r.total_transaksi }} setoran</div>
+                                </td>
+                                <td class="text-end">
+                                    {% if r.total_setoran > 0 %}
+                                        <span class="fw-bold text-1 fs-md">Rp {{ r.total_setoran|number_format(0,',','.') }}</span>
+                                    {% else %}
+                                        <span class="text-muted">Rp 0</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end text-muted fs-md">Rp {{ r.total_dasar|number_format(0,',','.') }}</td>
+                                <td class="text-end">
+                                    {% if r.total_komisi > 0 %}
+                                        <span class="fw-bolder text-success fs-lg">Rp {{ r.total_komisi|number_format(0,',','.') }}</span>
+                                    {% else %}
+                                        <span class="text-muted fs-md">Rp 0</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    {% if r.has_transaksi %}
+                                        {% if r.tertahan > 0 %}
+                                            <span class="badge badge-yellow"><i class="ph ph-warning-circle me-1"></i>{{ r.tertahan }} Tertahan</span>
+                                        {% else %}
+                                            <span class="badge badge-green"><i class="ph ph-check me-1"></i>Lolos Penuh</span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="badge">Belum Ada</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center d-print-none">
+                                    {% if r.has_transaksi %}
+                                        <a href="{{ path('app_setoran_tujuan_index', {tahun:tahun,bulan:bulan,reseller_id:r.id,tab:'detail'}) }}"
+                                           class="act-btn" title="Rincian">
+                                            <i class="ph ph-eye"></i>
+                                        </a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr><td colspan="9"><div class="empty py-4"><i class="ph ph-inbox fs-2 text-muted"></i><div class="empty-title mt-2">Tidak ada data komisi.</div><div class="empty-sub">Coba ubah filter.</div></div></td></tr>
+                        {% endfor %}
+                    </tbody>
+                    {% if resellerList|length > 0 %}
+                        <tfoot>
+                            <tr class="fw-bold fs-md" style="border-top:2px solid var(--border)">
+                                <td colspan="3" class="text-end text-muted py-3 px-3">TOTAL KESELURUHAN</td>
+                                <td class="text-center text-dark py-3 px-3">{{ summary.total_anggota }} anggota</td>
+                                <td class="text-end text-dark py-3 px-3">Rp {{ summary.total_setoran|number_format(0,',','.') }}</td>
+                                <td class="text-end text-muted py-3 px-3">Rp {{ summary.total_dasar|number_format(0,',','.') }}</td>
+                                <td class="text-end fw-bold py-3 px-3 text-success fs-lg">Rp {{ summary.total_komisi|number_format(0,',','.') }}</td>
+                                <td colspan="2"></td>
+                            </tr>
+                        </tfoot>
+                    {% endif %}
+                </table>
+            </div>
+        </div>
+        {% else %}
+        <div class="card"><div class="empty"><i class="ph ph-funnel"></i><div class="empty-title">Data belum ditampilkan</div><div class="empty-sub">Pilih filter lalu kirim untuk menampilkan rekap setoran.</div></div></div>
+        {% endif %}
+    {% endif %}
+
+    {# ========== TAB DETAIL ========== #}
+    {% if tab == 'detail' %}
+        {% if hasFilter %}
+        <div class="card">
+            <div class="table-responsive">
+                <table class="data-table setoran-tujuan-table" style="font-size:0.8rem;">
+                    <thead>
+                        <tr>
+                            <th style="width:45px;">#</th>
+                            <th>Anggota</th>
+                            <th>Paket</th>
+                            <th>Reseller</th>
+                            <th>Hasil Setoran</th>
+                            <th>Skema</th>
+                            <th class="text-end" style="width:110px;">Target</th>
+                            <th class="text-end" style="width:110px;">Pencapaian</th>
+                            <th class="text-center" style="width:70px;">%</th>
+                            <th class="text-center" style="width:90px;">Status</th>
+                            <th class="text-end" style="width:100px;">Dasar</th>
+                            <th class="text-end" style="width:110px;">Komisi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for m in memberRows %}
+                            <tr class="transition-colors">
+                                <td class="text-muted text-center" style="font-size:0.78rem;">{{ loop.index }}</td>
+                                <td>
+                                    <div class="fw-bold text-1" style="line-height:1.2">{{ m.nama_anggota }}</div>
+                                    <span class="badge fs-xs">{{ m.kode_anggota }}</span>
+                                </td>
+                                <td>
+                                    <span class="badge badge-sub text-1 fw-semibold">{{ m.nama_kategori }}</span>
+                                    {% if m.kode_kategori and m.kode_kategori != '-' %}
+                                        <div class="fs-xs text-muted">{{ m.kode_kategori }}</div>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="fw-semibold text-1">{{ m.nama_reseller }}</div>
+                                    <div class="fs-xs text-3">{{ m.kode_reseller }}</div>
+                                </td>
+                                <td class="text-2 fw-medium" style="font-size:0.8rem">{{ m.nama_setoran }}</td>
+                                <td><span class="badge fs-xs">{{ m.skema_label }}</span></td>
+                                <td class="text-end text-muted">Rp {{ m.target|number_format(0,',','.') }}</td>
+                                <td class="text-end text-dark fw-bold">Rp {{ m.pencapaian|number_format(0,',','.') }}</td>
+                                <td class="text-center">
+                                    {% if m.persen_capai >= 100 %}
+                                        <span class="badge badge-green">{{ m.persen_capai|number_format(1,',','.') }}%</span>
+                                    {% elseif m.persen_capai >= 50 %}
+                                        <span class="badge badge-blue">{{ m.persen_capai|number_format(1,',','.') }}%</span>
+                                    {% else %}
+                                        <span class="badge">{{ m.persen_capai|number_format(1,',','.') }}%</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    {% if 'success' in m.status_badge %}
+                                        <span class="badge badge-green"><i class="ph ph-check-circle me-1"></i>{{ m.status_label|replace({'Lolos':'Lolos'}) }}</span>
+                                    {% elseif 'warning' in m.status_badge %}
+                                        <span class="badge badge-yellow"><i class="ph ph-warning me-1"></i>{{ m.status_label }}</span>
+                                    {% else %}
+                                        <span class="badge">{{ m.status_label }}</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end text-muted">Rp {{ m.dasar|number_format(0,',','.') }}</td>
+                                <td class="text-end fw-bold text-success fs-md">Rp {{ m.komisi|number_format(0,',','.') }}</td>
+                            </tr>
+                        {% else %}
+                            <tr><td colspan="12"><div class="empty py-4"><i class="ph ph-inbox fs-2 text-muted"></i><div class="empty-title mt-2">Tidak ada rincian anggota.</div><div class="empty-sub">Coba ubah filter.</div></div></td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% else %}
+        <div class="card"><div class="empty"><i class="ph ph-funnel"></i><div class="empty-title">Data belum ditampilkan</div><div class="empty-sub">Pilih filter lalu kirim untuk menampilkan rincian anggota.</div></div></div>
+        {% endif %}
+    {% endif %}
+
+    {# ========== TAB SKEMA ========== #}
+    {% if tab == 'skema' %}
+    <div class="card mb-3">
+        <div class="card-body">
+            <div class="fw-bold text-1 mb-2">Rumus Perhitungan Komisi Reseller</div>
+            <div class="fs-base text-2" style="line-height:1.7">
+                <strong>Dasar Komisi</strong> = Total Pencapaian Setoran &divide; Angka Pembagi Master<br>
+                <strong>Komisi Awal</strong> = Dasar Komisi &times; (Persentase Komisi / 100)<br>
+                <strong>Komisi Diterima</strong> = Jika lolos syarat minimal pencapaian dan tidak melebihi batas maksimal paket.
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        {% for s in setoranSchemes %}
+            <div class="col-12 col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <div>
+                            <span class="code-chip">{{ s.kodeSetoran }}</span>
+                            <div class="fs-lg fw-bold text-1" style="margin-top:0.3rem">{{ s.namaSetoran }}</div>
+                        </div>
+                        {% if s.status == 'AKTIF' %}
+                            <span class="badge badge-green">AKTIF</span>
+                        {% else %}
+                            <span class="badge">NONAKTIF</span>
+                        {% endif %}
+                    </div>
+                    <div class="card-body">
+                        <form method="post" action="{{ path('app_setoran_tujuan_update_skema', {id:s.id}) }}" class="row g-2">
+                            <input type="hidden" name="_token" value="{{ csrf_token('app_setoran_tujuan_update_skema') }}">
+                            <div class="col-4">
+                                <label class="form-label text-3 fs-xs fw-semibold mb-1">Persentase (%)</label>
+                                <div class="input-group input-group-sm">
+                                    <input type="number" step="0.01" min="0" max="100" name="komisi_persen" value="{{ s.komisiPersen }}" class="form-control text-end fw-bold" required>
+                                    <span class="input-group-text">%</span>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <label class="form-label text-3 fs-xs fw-semibold mb-1">Pembagi</label>
+                                <input type="number" step="0.01" min="0.1" name="komisi_pembagi" value="{{ s.komisiPembagi }}" class="form-control text-end fw-bold" required>
+                            </div>
+                            <div class="col-4">
+                                <label class="form-label text-3 fs-xs fw-semibold mb-1">Min. Capai (%)</label>
+                                <div class="input-group input-group-sm">
+                                    <input type="number" step="0.01" min="0" max="100" name="komisi_minimal_pencapaian" value="{{ s.komisiMinimalPencapaian }}" class="form-control text-end" required>
+                                    <span class="input-group-text">%</span>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label text-3 fs-xs fw-semibold mb-1">Status</label>
+                                <select name="status" class="form-select">
+                                    <option value="AKTIF" {% if s.status == 'AKTIF' %}selected{% endif %}>AKTIF</option>
+                                    <option value="NONAKTIF" {% if s.status == 'NONAKTIF' %}selected{% endif %}>NONAKTIF</option>
+                                </select>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label text-3 fs-xs fw-semibold mb-1">Catatan</label>
+                                <input type="text" name="komisi_catatan" value="{{ s.komisiCatatan }}" class="form-control" placeholder="Catatan skema...">
+                            </div>
+                            <div class="col-12 text-end mt-1">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="ph ph-floppy-disk me-1"></i> Simpan Skema
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="print-only mt-4 d-none">
+        <div class="row text-center mt-5 pt-3">
+            <div class="col-6">
+                <div>Mengetahui / Menyetujui,</div>
+                <div class="small text-muted mb-5">Koordinator Reseller</div>
+                <div class="fw-bold text-decoration-underline">
+                    {% if resellerId > 0 %}
+                        {% for r in resellers %}{% if r.id == resellerId %}{{ r.namaReseller }}{% endif %}{% endfor %}
+                    {% else %}
+                        ....................................
+                    {% endif %}
+                </div>
+            </div>
+            <div class="col-6">
+                <div>Dibuat &amp; Diverifikasi oleh,</div>
+                <div class="small text-muted mb-5">Admin Keuangan Zeran Parcel</div>
+                {% set cu = current_user() %}
+                <div class="fw-bold text-decoration-underline">{{ cu ? (cu.nama ?: cu.username) : 'Admin Zeran' }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const form = document.getElementById("filterForm");
+    const resellerSel = document.getElementById("resellerSelect");
+    const kategoriSel = document.getElementById("kategoriSelect");
+    const katLoad = document.getElementById("katLoad");
+
+    ["tahunSelect","bulanSelect","kategoriSelect","setoranTujuanSelect"].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener("change", () => form.submit());
+    });
+
+    resellerSel?.addEventListener("change", function () {
+        const rid = this.value;
+        if (!rid || rid === "0") {
+            kategoriSel.innerHTML = '<option value="0">Semua Kategori</option>';
+            form.submit();
+            return;
+        }
+        if (katLoad) katLoad.classList.remove("d-none");
+        kategoriSel.disabled = true;
+        fetch('{{ path("app_kolektif_kategori_by_reseller") }}?reseller_id=' + encodeURIComponent(rid))
+            .then(r => r.json())
+            .then(data => {
+                kategoriSel.innerHTML = '<option value="0">Semua Kategori (reseller ini)</option>';
+                data.forEach(item => {
+                    const o = document.createElement('option');
+                    o.value = item.id;
+                    o.textContent = item.nama_kategori + (item.count_anggota > 0 ? ` (${item.count_anggota})` : '');
+                    kategoriSel.appendChild(o);
+                });
+            })
+            .catch(() => {})
+            .finally(() => {
+                if (katLoad) katLoad.classList.add("d-none");
+                kategoriSel.disabled = false;
+                form.submit();
+            });
+    });
+});
+</script>
+{% endblock %}

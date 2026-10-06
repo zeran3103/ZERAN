@@ -1,0 +1,447 @@
+{% extends 'base.html.twig' %}
+{% block title %}Riwayat Mutasi — Zeran Parcel{% endblock %}
+
+{% block stylesheets %}
+<style>
+    .transaksi { max-width: 1600px; margin: 0 auto; }
+    .transaksi-filter-card { background: var(--bg-sub); border: 1px solid var(--border); border-radius: var(--radius); }
+    .transaksi-filter-header { padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+    .transaksi-filter-title { font-size: var(--fs-base); font-weight: 600; color: var(--text); }
+    .transaksi-filter-body { padding: 16px; }
+    .transaksi-stat { background: var(--bg-sub); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; position: relative; overflow: hidden; }
+    .transaksi-stat::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+    .transaksi-stat.s-blue::before { background: var(--info); }
+    .transaksi-stat.s-green::before { background: var(--success); }
+    .transaksi-stat.s-accent::before { background: var(--accent); }
+    .transaksi-stat .stat-label { font-size: var(--fs-xs); font-weight: 600; color: var(--text-3); margin-bottom: 6px; }
+    .transaksi-stat .stat-val { font-size: clamp(1.1rem, 2vw, 1.4rem); font-weight: 700; color: var(--text); line-height: 1.2; letter-spacing: -.02em; }
+    .transaksi-stat .stat-val.text-success { color: var(--success); }
+    .transaksi-stat .stat-val.text-primary { color: var(--accent); }
+    .bulk-toolbar { background: var(--bg-sub); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+    .transaksi-table td, .transaksi-table th { vertical-align: middle; }
+    .transaksi-table .table-checkbox { width: 40px; }
+    .transaksi-table .col-id { width: 65px; }
+    .transaksi-table .col-date { width: 140px; }
+    .transaksi-table .col-period { width: 110px; }
+    .transaksi-table .col-source { width: 110px; }
+    .transaksi-table .col-nominal { width: 135px; }
+    .transaksi-table .col-status { width: 100px; }
+    .transaksi-table .col-actions { width: 80px; }
+    .transaksi-table .anggota-name { font-weight: 600; color: var(--text); }
+    .transaksi-table .anggota-code { font-size: var(--fs-xs); color: var(--text-3); }
+    .transaksi-table .nominal-cell { font-weight: 700; color: var(--text); text-align: right; }
+    .transaksi-table .total-row td { font-weight: 700; padding: 10px 16px; }
+    .transaksi-table .total-row .total-label { text-align: right; color: var(--text-2); font-size: var(--fs-sm); }
+    .transaksi-table .total-row .total-value { text-align: right; color: var(--success); font-size: var(--fs-base); }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="transaksi">
+    <div class="page-hd">
+        <div class="page-hd-row">
+            <div>
+                <h1>Riwayat Mutasi</h1>
+                <p>Riwayat seluruh setoran tabungan anggota dan mutasi kas parcel.</p>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{{ path('app_transaksi_index', {filter:1,tahun:0,bulan:0}) }}" class="btn btn-secondary">
+                    <i class="ph ph-calendar-blank me-1"></i> Semua Periode
+                </a>
+                <a href="{{ path('app_kolektif_input') }}" class="btn btn-primary">
+                    <i class="ph ph-plus-circle me-1"></i> Input Kolektif
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="transaksi-filter-card mb-3">
+        <div class="transaksi-filter-header">
+            <div class="transaksi-filter-title">Filter Data Transaksi</div>
+            {% if q or tahun > 0 or (bulan != '0' and bulan != '') or resellerId > 0 or kategoriId > 0 or approval != '' %}
+                <a href="{{ path('app_transaksi_index', {reset: 1}) }}" class="btn btn-ghost btn-sm text-danger" title="Reset semua filter">
+                    <i class="ph ph-arrow-counter-clockwise me-1"></i> Reset Filter
+                </a>
+            {% endif %}
+        </div>
+        <div class="transaksi-filter-body">
+            <form method="get" action="{{ path('app_transaksi_index') }}" id="filterForm" class="row g-2 align-items-end">
+                <input type="hidden" name="filter" value="1">
+
+                <div class="col-6 col-sm-3 col-md-2">
+                    <label class="form-label text-3 fs-xs fw-semibold mb-1">Tahun</label>
+                    <select name="tahun" id="tahunSelect" class="form-select form-select-sm">
+                        <option value="0" {% if tahun==0 %}selected{% endif %}>Semua</option>
+                        {% for y in yearsList %}<option value="{{ y }}" {% if tahun==y %}selected{% endif %}>{{ y }}</option>{% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-6 col-sm-3 col-md-2">
+                    <label class="form-label text-3 fs-xs fw-semibold mb-1">Bulan</label>
+                    <select name="bulan" id="bulanSelect" class="form-select form-select-sm">
+                        <option value="0" {% if bulan=='0' or bulan=='' %}selected{% endif %}>Semua</option>
+                        {% for mKey,mName in monthsList %}<option value="{{ mKey }}" {% if bulan==mKey %}selected{% endif %}>{{ mName }}</option>{% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-12 col-sm-6 col-md-3">
+                    <label class="form-label text-3 fs-xs fw-semibold mb-1">Reseller</label>
+                    <select name="reseller_id" id="resellerSelect" class="form-select form-select-sm">
+                        <option value="0">Semua Reseller</option>
+                        {% for r in resellers %}<option value="{{ r.id }}" {% if resellerId==r.id %}selected{% endif %}>{{ r.namaReseller }} ({{ r.kodeReseller }})</option>{% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-12 col-sm-6 col-md-2">
+                    <label class="form-label text-3 fs-xs fw-semibold mb-1">
+                        Kategori
+                        <span id="katLoad" class="d-none fs-xs text-3 ms-1">loading…</span>
+                    </label>
+                    <select name="kategori_id" id="kategoriSelect" class="form-select form-select-sm">
+                        <option value="0">Semua{% if resellerId>0 %} (reseller ini){% endif %}</option>
+                        {% for k in kategoris %}<option value="{{ k.id }}" {% if kategoriId==k.id %}selected{% endif %}>{{ k.nama_kategori }}{% if k.count_anggota is defined and k.count_anggota>0 %} ({{ k.count_anggota }}){% endif %}</option>{% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-6 col-sm-3 col-md-1">
+                    <label class="form-label text-3 fs-xs fw-semibold mb-1">Status</label>
+                    <select name="approval" id="approvalSelect" class="form-select form-select-sm">
+                        <option value="" {% if approval=='' %}selected{% endif %}>Semua</option>
+                        <option value="approved" {% if approval=='approved' %}selected{% endif %}>Approved</option>
+                        <option value="pending" {% if approval=='pending' %}selected{% endif %}>Pending</option>
+                        <option value="rejected" {% if approval=='rejected' %}selected{% endif %}>Rejected</option>
+                    </select>
+                </div>
+
+                <div class="col-12 col-sm-9 col-md-2">
+                    <label class="form-label text-3 fs-xs fw-semibold mb-1">Cari Anggota</label>
+                    <input type="search" name="q" id="searchQ" value="{{ q }}" class="form-control form-control-sm" placeholder="Nama / kode...">
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-3">
+        <div class="col-12 col-sm-6 col-md-4">
+            <div class="transaksi-stat s-blue">
+                <div class="stat-label">Total Transaksi</div>
+                <div class="stat-val">{{ totalItems|number_format(0,',','.') }} <span class="fs-xs fw-normal text-3">data</span></div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-md-4">
+            <div class="transaksi-stat s-green">
+                <div class="stat-label">Total Terfilter</div>
+                <div class="stat-val text-success">Rp {{ totalSum|number_format(0,',','.') }}</div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-md-4">
+            <div class="transaksi-stat s-accent">
+                <div class="stat-label">Rata-rata Setoran</div>
+                <div class="stat-val text-primary">
+                    {% if totalItems > 0 %}
+                        Rp {{ (totalSum / totalItems)|round(0, 'floor')|number_format(0,',','.') }}
+                    {% else %}
+                        Rp 0
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if transaksiList|length > 0 %}
+        <form method="post" action="{{ path('app_transaksi_bulk_delete') }}" id="bulkDeleteForm" class="mb-3">
+            <input type="hidden" name="_token" value="{{ csrf_token('app_transaksi_bulk_delete') }}">
+            <div class="bulk-toolbar">
+                <div class="d-flex align-items-center gap-3 flex-wrap">
+                    <div class="form-check mb-0">
+                        <input type="checkbox" id="checkAll" class="form-check-input cursor-pointer" aria-label="Pilih semua di halaman ini">
+                        <label class="form-check-label fw-semibold ms-1 cursor-pointer fs-sm text-2" for="checkAll">Pilih semua di halaman ini</label>
+                    </div>
+                    <span class="badge badge-accent px-2 py-1 fs-xs" id="selectedBadge">0 dipilih</span>
+                    <span class="badge badge-green px-2 py-1 fs-xs d-none" id="selectedNominalBadge">Rp 0</span>
+                </div>
+                <div>
+                    <button type="submit" id="btnBulkDelete" class="btn btn-danger btn-sm px-3" disabled>
+                        <i class="ph ph-trash me-1"></i> Hapus Terpilih
+                    </button>
+                </div>
+            </div>
+        </form>
+    {% endif %}
+
+    <div class="card mb-4">
+        <div class="table-responsive">
+            <table class="data-table table-hover transaksi-table" aria-label="Daftar transaksi">
+                <thead>
+                    <tr>
+                        <th class="table-checkbox text-center">
+                            <input type="checkbox" class="form-check-input" id="checkAllTh" aria-label="Pilih semua transaksi">
+                        </th>
+                        <th class="col-id">#ID</th>
+                        <th class="col-date">Tanggal</th>
+                        <th>Anggota</th>
+                        <th>Reseller</th>
+                        <th>Kategori</th>
+                        <th class="col-period">Periode</th>
+                        <th class="col-source">Sumber</th>
+                        <th class="col-nominal text-end">Nominal</th>
+                        <th class="col-status text-center">Status</th>
+                        <th class="col-actions text-center">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for t in transaksiList %}
+                    <tr>
+                        <td class="table-checkbox text-center">
+                            <input type="checkbox" name="ids[]" value="{{ t.id }}" data-nominal="{{ t.nominal }}" class="form-check-input row-checkbox cursor-pointer" form="bulkDeleteForm" aria-label="Pilih transaksi #{{ t.id }}">
+                        </td>
+                        <td class="col-id text-muted fs-sm">#{{ t.id }}</td>
+                        <td class="col-date fs-xs text-muted">{{ t.createdAt ? t.createdAt|date('d/m/Y H:i') : '—' }}</td>
+                        <td>
+                            <div class="anggota-name">{{ t.anggota ? t.anggota.namaAnggota : '—' }}</div>
+                            {% if t.anggota and t.anggota.kodeAnggota %}
+                                <div class="anggota-code">{{ t.anggota.kodeAnggota }}</div>
+                            {% endif %}
+                        </td>
+                        <td class="text-2 fw-medium fs-sm">{{ t.reseller ? t.reseller.namaReseller : '—' }}</td>
+                        <td>
+                            {% if t.kategori %}
+                                <span class="badge badge-blue">{{ t.kategori.namaKategori }}</span>
+                            {% else %}
+                                <span class="text-3">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="col-period"><span class="badge">{{ t.bulan|format_periode }}</span></td>
+                        <td class="col-source">
+                            {% if batchMap[t.id] is defined %}
+                                <a href="{{ path('app_kolektif_detail', {id:batchMap[t.id]}) }}" class="badge badge-blue text-decoration-none" title="Lihat detail batch kolektif">
+                                    <i class="ph ph-stack me-1"></i>Batch #{{ batchMap[t.id] }}
+                                </a>
+                            {% else %}
+                                <span class="badge text-muted">Langsung</span>
+                            {% endif %}
+                        </td>
+                        <td class="col-nominal nominal-cell">
+                            Rp {{ t.nominal|number_format(0,',','.') }}
+                        </td>
+                        <td class="col-status text-center">
+                            {% if t.approvalStatus == 'approved' %}
+                                <span class="badge badge-green"><i class="ph ph-check-circle me-1"></i>Approved</span>
+                            {% elseif t.approvalStatus == 'pending' %}
+                                <span class="badge badge-yellow"><i class="ph ph-clock me-1"></i>Pending</span>
+                            {% else %}
+                                <span class="badge badge-red"><i class="ph ph-x-circle me-1"></i>{{ t.approvalStatus|capitalize }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="col-actions text-center">
+                            <div class="d-flex gap-1 justify-content-center">
+                                <a href="{{ path('app_transaksi_edit', {id:t.id, return_url: app.request.requestUri}) }}" class="act-btn" title="Edit Transaksi #{{ t.id }}" aria-label="Edit transaksi {{ t.id }}">
+                                    <i class="ph ph-pencil-simple" aria-hidden="true"></i>
+                                </a>
+                                <form method="post" action="{{ path('app_transaksi_delete', {id:t.id}) }}" class="d-inline"
+                                      data-confirm="Hapus transaksi #{{ t.id }} (Rp {{ t.nominal|number_format(0,',','.') }})?{% if batchMap[t.id] is defined %} Terhubung ke Batch #{{ batchMap[t.id] }}.{% endif %}">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('app_transaksi_delete') }}">
+                                    <button type="submit" class="act-btn danger" title="Hapus Transaksi #{{ t.id }}" aria-label="Hapus transaksi {{ t.id }}">
+                                        <i class="ph ph-trash" aria-hidden="true"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="11">
+                            <div class="empty py-5">
+                                <i class="ph ph-receipt fs-1 text-muted"></i>
+                                <div class="empty-title mt-2">Tidak ada data transaksi</div>
+                                <div class="empty-sub">Coba sesuaikan filter tahun, bulan, reseller, atau kata kunci pencarian.</div>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+                {% if transaksiList|length > 0 %}
+                <tfoot>
+                    <tr class="total-row">
+                        <td colspan="8" class="total-label">TOTAL HALAMAN INI</td>
+                        <td class="total-value">
+                            {% set pageTotal = 0 %}
+                            {% for t in transaksiList %}{% set pageTotal = pageTotal + t.nominal %}{% endfor %}
+                            Rp {{ pageTotal|number_format(0,',','.') }}
+                        </td>
+                        <td colspan="2"></td>
+                    </tr>
+                </tfoot>
+                {% endif %}
+            </table>
+        </div>
+
+        {% if totalPages > 1 %}
+            <div class="pager py-2 px-3 border-top d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <span class="pager-text text-muted fs-xs">
+                    Halaman {{ currentPage }} dari {{ totalPages }}, Menampilkan {{ transaksiList|length }} dari {{ totalItems|number_format(0,',','.') }} transaksi
+                </span>
+                <div class="pager-links">
+                    {% if currentPage > 1 %}
+                        <a href="{{ path('app_transaksi_index', {filter:1, tahun:tahun, bulan:bulan, reseller_id:resellerId, kategori_id:kategoriId, q:q, approval:approval, page:currentPage-1}) }}" aria-label="Halaman sebelumnya">
+                            <i class="ph ph-caret-left"></i>
+                        </a>
+                    {% else %}
+                        <span class="disabled"><i class="ph ph-caret-left"></i></span>
+                    {% endif %}
+
+                    {% for p in max(1,currentPage-2)..min(totalPages,currentPage+2) %}
+                        <a href="{{ path('app_transaksi_index', {filter:1, tahun:tahun, bulan:bulan, reseller_id:resellerId, kategori_id:kategoriId, q:q, approval:approval, page:p}) }}" {% if p==currentPage %}class="active"{% endif %}>
+                            {{ p }}
+                        </a>
+                    {% endfor %}
+
+                    {% if currentPage < totalPages %}
+                        <a href="{{ path('app_transaksi_index', {filter:1, tahun:tahun, bulan:bulan, reseller_id:resellerId, kategori_id:kategoriId, q:q, approval:approval, page:currentPage+1}) }}" aria-label="Halaman berikutnya">
+                            <i class="ph ph-caret-right"></i>
+                        </a>
+                    {% else %}
+                        <span class="disabled"><i class="ph ph-caret-right"></i></span>
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const form        = document.getElementById('filterForm');
+    const resellerSel = document.getElementById('resellerSelect');
+    const kategoriSel = document.getElementById('kategoriSelect');
+    const katLoad     = document.getElementById('katLoad');
+    const searchQ     = document.getElementById('searchQ');
+
+    ['tahunSelect','bulanSelect','kategoriSelect','approvalSelect'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('change', () => form.submit());
+    });
+
+    resellerSel?.addEventListener('change', function () {
+        const rid = this.value;
+        if (!rid || rid === '0') {
+            kategoriSel.innerHTML = '<option value="0">Semua</option>';
+            form.submit();
+            return;
+        }
+        if (katLoad) katLoad.classList.remove('d-none');
+        kategoriSel.disabled = true;
+        fetch('{{ path("app_kolektif_kategori_by_reseller") }}?reseller_id=' + encodeURIComponent(rid))
+            .then(r => r.json())
+            .then(data => {
+                kategoriSel.innerHTML = '<option value="0">Semua (reseller ini)</option>';
+                data.forEach(item => {
+                    const o = document.createElement('option');
+                    o.value = item.id;
+                    o.textContent = item.nama_kategori + (item.count_anggota > 0 ? ` (${item.count_anggota})` : '');
+                    kategoriSel.appendChild(o);
+                });
+            })
+            .catch(() => {})
+            .finally(() => {
+                if (katLoad) katLoad.classList.add('d-none');
+                kategoriSel.disabled = false;
+                form.submit();
+            });
+    });
+
+    window.addEventListener('keydown', function (e) {
+        const isCtrlOrCmd = e.ctrlKey || e.metaKey;
+        if (e.key === '/' && !isCtrlOrCmd && !e.altKey) {
+            const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
+            if (activeTag !== 'input' && activeTag !== 'textarea' && activeTag !== 'select') {
+                e.preventDefault();
+                if (searchQ) {
+                    searchQ.focus();
+                    searchQ.select();
+                }
+            }
+        }
+    });
+
+    searchQ?.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') {
+            this.value = '';
+            form.submit();
+        }
+    });
+
+    const checkAll            = document.getElementById('checkAll');
+    const checkAllTh          = document.getElementById('checkAllTh');
+    const rowCheckboxes       = document.querySelectorAll('.row-checkbox');
+    const selectedBadge       = document.getElementById('selectedBadge');
+    const selectedNominalBadge= document.getElementById('selectedNominalBadge');
+    const btnBulkDelete       = document.getElementById('btnBulkDelete');
+    const bulkDeleteForm      = document.getElementById('bulkDeleteForm');
+
+    function updateSelectionState() {
+        const checkedBoxes = Array.from(rowCheckboxes).filter(cb => cb.checked);
+        const count = checkedBoxes.length;
+        let totalNominal = 0;
+        checkedBoxes.forEach(cb => {
+            totalNominal += parseFloat(cb.dataset.nominal || 0);
+        });
+
+        if (selectedBadge) {
+            selectedBadge.textContent = count + ' dipilih';
+        }
+
+        if (selectedNominalBadge) {
+            if (count > 0) {
+                selectedNominalBadge.textContent = 'Rp ' + totalNominal.toLocaleString('id-ID');
+                selectedNominalBadge.classList.remove('d-none');
+            } else {
+                selectedNominalBadge.classList.add('d-none');
+            }
+        }
+
+        if (btnBulkDelete) {
+            btnBulkDelete.disabled = count === 0;
+        }
+
+        const allChecked = rowCheckboxes.length > 0 && count === rowCheckboxes.length;
+        if (checkAll) checkAll.checked = allChecked;
+        if (checkAllTh) checkAllTh.checked = allChecked;
+    }
+
+    function toggleAll(checked) {
+        rowCheckboxes.forEach(cb => { cb.checked = checked; });
+        updateSelectionState();
+    }
+
+    checkAll?.addEventListener('change', (e) => toggleAll(e.target.checked));
+    checkAllTh?.addEventListener('change', (e) => toggleAll(e.target.checked));
+
+    rowCheckboxes.forEach(cb => {
+        cb.addEventListener('change', updateSelectionState);
+    });
+
+    bulkDeleteForm?.addEventListener('submit', function (e) {
+        const checkedBoxes = Array.from(rowCheckboxes).filter(cb => cb.checked);
+        if (checkedBoxes.length === 0) {
+            e.preventDefault();
+            alert('Pilih minimal satu transaksi untuk dihapus.');
+            return false;
+        }
+
+        let totalNominal = 0;
+        checkedBoxes.forEach(cb => {
+            totalNominal += parseFloat(cb.dataset.nominal || 0);
+        });
+
+        const msg = 'Yakin ingin menghapus ' + checkedBoxes.length + ' transaksi terpilih?\nTotal Nominal: Rp ' + totalNominal.toLocaleString('id-ID') + '\n\nTransaksi yang terhubung ke batch kolektif akan disinkronkan.';
+        if (!confirm(msg)) {
+            e.preventDefault();
+            return false;
+        }
+    });
+});
+</script>
+{% endblock %}

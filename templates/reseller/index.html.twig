@@ -1,0 +1,163 @@
+{% extends 'base.html.twig' %}
+{% block title %}Mitra Reseller — Zeran Parcel{% endblock %}
+
+{% block stylesheets %}
+<style>
+    .reseller { max-width: 1600px; margin: 0 auto; }
+    .reseller-filter-card { background: var(--bg-sub); border: 1px solid var(--border); border-radius: var(--radius); }
+    .reseller-filter-header { padding: 12px 16px; border-bottom: 1px solid var(--border); }
+    .reseller-filter-title { font-size: var(--fs-base); font-weight: 600; color: var(--text); }
+    .reseller-filter-body { padding: 16px; }
+    .reseller-stat { background: var(--bg-sub); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; position: relative; overflow: hidden; }
+    .reseller-stat::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+    .reseller-stat.s-accent::before { background: var(--accent); }
+    .reseller-stat .stat-label { font-size: var(--fs-xs); font-weight: 600; color: var(--text-3); margin-bottom: 6px; }
+    .reseller-stat .stat-val { font-size: clamp(1.1rem, 2vw, 1.4rem); font-weight: 700; color: var(--text); line-height: 1.2; letter-spacing: -.02em; }
+    .reseller-table td, .reseller-table th { vertical-align: middle; }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="reseller">
+    <div class="page-hd">
+        <div class="page-hd-row">
+            <div>
+                <h1>Mitra Reseller</h1>
+                <p>Daftar koordinator agen &amp; reseller.</p>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{{ path('app_reseller_new') }}" class="btn btn-primary">
+                    <i class="ph ph-plus-circle me-1"></i> Tambah Reseller
+                </a>
+                <a href="{{ path('app_reseller_csv', {q: q}) }}" class="btn btn-outline-success" title="Export Excel / CSV">
+                    <i class="ph ph-file-xls me-1"></i> Export CSV
+                </a>
+                <a href="{{ path('app_reseller_index') }}" class="btn btn-secondary" title="Refresh">
+                    <i class="ph ph-arrow-clockwise me-1"></i> Refresh
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-3">
+        <div class="col-12 col-md-6">
+            <div class="reseller-stat s-accent">
+                <div class="stat-label">Total Reseller</div>
+                <div class="stat-val">{{ resellers|length }}</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="reseller-filter-card mb-3">
+        <div class="reseller-filter-header">
+            <div class="reseller-filter-title">Cari Reseller</div>
+        </div>
+        <div class="reseller-filter-body">
+            <form method="get" action="{{ path('app_reseller_index') }}" class="row g-2 align-items-end">
+                <input type="hidden" name="filter" value="1">
+                <div class="col-12 col-md-8 col-lg-6">
+                    <label class="form-label text-3 fs-xs fw-semibold mb-1">Cari nama / kode / no. HP</label>
+                    <div class="input-group input-group-sm">
+                        <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Ketik nama, kode, atau nomor HP...">
+                        <button type="submit" class="btn btn-primary" title="Cari">
+                            <i class="ph ph-magnifying-glass"></i>
+                        </button>
+                        <a href="{{ path('app_reseller_index') }}" class="btn btn-secondary" title="Reset Filter">
+                            <i class="ph ph-arrow-counter-clockwise"></i>
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="table-responsive">
+            <table class="data-table reseller-table table-hover">
+                <thead>
+                    <tr>
+                        <th class="table-checkbox"><input type="checkbox" class="form-check-input" id="selectAll" aria-label="Pilih semua reseller"></th>
+                        <th style="width:60px;">ID</th>
+                        <th>Info Reseller</th>
+                        <th>WhatsApp</th>
+                        <th class="text-center">Performa (Anggota)</th>
+                        <th class="text-end">Total Setoran</th>
+                        <th class="text-center" style="width:120px;">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in resellers %}
+                        <tr>
+                            <td class="table-checkbox"><input type="checkbox" class="form-check-input row-checkbox" value="{{ r.id }}" aria-label="Pilih reseller {{ r.nama_reseller }}"></td>
+                            <td class="text-3 fs-sm fw-semibold">#{{ r.id }}</td>
+                            <td>
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="bg-accent text-accent-fg align-items-center justify-content-center fw-semibold fs-md" style="width:36px;height:36px;border-radius:8px;display:flex">
+                                        {{ r.nama_reseller ? r.nama_reseller|slice(0,1)|upper : 'R' }}
+                                    </div>
+                                    <div>
+                                        <div class="fw-semibold text-1">{{ r.nama_reseller ?: '—' }}</div>
+                                        <div class="fs-xs text-3">{{ r.kode_reseller ?: 'Tanpa kode' }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                {% if r.no_hp %}
+                                    <a href="https://wa.me/{{ r.no_hp|replace({' ':'','-':'','+':''}) }}" target="_blank"
+                                       class="btn btn-sm btn-light border d-inline-flex align-items-center gap-1 fs-sm">
+                                        <i class="ph ph-chat-circle text-success"></i>{{ r.no_hp }}
+                                    </a>
+                                {% else %}<span class="text-muted fst-italic">—</span>{% endif %}
+                            </td>
+                            <td class="text-center">
+                                <div class="d-flex flex-column align-items-center">
+                                    <span class="badge badge-blue fs-base mb-1" style="padding:4px 8px">
+                                        <i class="ph ph-users me-1"></i>{{ r.total_anggota }} Total
+                                    </span>
+                                    <span class="fs-xs text-3">{{ r.anggota_aktif }} Aktif | {{ r.total_transaksi }} Transaksi</span>
+                                </div>
+                            </td>
+                            <td class="text-end">
+                                <span class="fw-bold text-success fs-md">Rp {{ (r.total_omzet ?: 0)|number_format(0,',','.') }}</span>
+                            </td>
+                            <td class="text-center">
+                                <div class="d-flex gap-2 justify-content-center">
+                                    <a href="{{ path('app_laporan_komisi', {reseller_id:r.id}) }}" class="act-btn" title="Lihat Komisi Reseller" aria-label="Lihat komisi {{ r.nama_reseller }}"><i class="ph ph-wallet text-success" aria-hidden="true"></i></a>
+                                    <a href="{{ path('app_anggota_index', {reseller_id:r.id,filter:1}) }}" class="act-btn" title="Lihat Anggota Binaan" aria-label="Lihat anggota binaan {{ r.nama_reseller }}"><i class="ph ph-users" aria-hidden="true"></i></a>
+                                    <a href="{{ path('app_reseller_edit', {id:r.id}) }}" class="act-btn" title="Edit" aria-label="Edit {{ r.nama_reseller }}"><i class="ph ph-pencil-simple" aria-hidden="true"></i></a>
+                                    <form method="post" action="{{ path('app_reseller_delete', {id:r.id}) }}" class="d-inline"
+                                          data-confirm="Yakin ingin menghapus reseller {{ r.nama_reseller }}?">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('app_reseller_delete') }}">
+                                        <button type="submit" class="act-btn danger" title="Hapus" aria-label="Hapus {{ r.nama_reseller }}"><i class="ph ph-trash" aria-hidden="true"></i></button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="7">
+                                <div class="empty">
+                                    <i class="ph ph-inbox"></i>
+                                    {% if hasFilter %}
+                                        <div class="empty-title">Tidak ada reseller ditemukan</div>
+                                        <div class="empty-sub">Ubah kriteria pencarian Anda.</div>
+                                    {% else %}
+                                        <div class="empty-title">Data belum ditampilkan</div>
+                                        <div class="empty-sub">Isi kata kunci atau pilih filter lalu kirim untuk menampilkan daftar reseller.</div>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('selectAll')?.addEventListener('change', function(e) {
+        document.querySelectorAll('.row-checkbox').forEach(cb => cb.checked = e.target.checked);
+    });
+</script>
+{% endblock %}

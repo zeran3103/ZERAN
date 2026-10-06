@@ -1,0 +1,365 @@
+{% extends 'base.html.twig' %}
+{% block title %}Laporan Arus Setoran — Zeran Parcel{% endblock %}
+
+{% macro money(v) %}{{ v > 0 ? v|number_format(0,',','.') : '' }}{% endmacro %}
+
+{% block body %}
+
+<div class="laporan">
+
+<div class="page-hd fade-in">
+    <div class="page-hd-row">
+        <div>
+            <h1>Laporan Arus Setoran</h1>
+            <p>Rekap setoran per anggota per bulan — Total Bayar, Target &amp; Sisa.</p>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            <button type="button" onclick="window.print()" class="btn btn-outline-secondary d-none d-sm-inline-flex align-items-center gap-1" title="Cetak halaman laporan">
+                <i class="ph ph-printer"></i>
+                <span>Cetak</span>
+            </button>
+            <a href="{{ path('app_laporan_transaksi_csv', {filter:1,tahun:tahun,bulan:bulan,reseller_id:resellerId,kategori_id:kategoriId,status_bayar:statusBayar,q:q}) }}"
+               class="btn btn-outline-success d-inline-flex align-items-center gap-1"
+               title="Export ke file Excel / CSV">
+                <i class="ph ph-file-xls"></i>
+                <span>Export CSV</span>
+            </a>
+            <a href="{{ path('app_laporan_transaksi_pdf', {filter:1,tahun:tahun,bulan:bulan,reseller_id:resellerId,kategori_id:kategoriId,status_bayar:statusBayar,q:q}) }}"
+               class="btn btn-primary export-pdf-btn"
+               aria-label="Export laporan transaksi ke PDF">
+                <span class="export-pdf-icon" aria-hidden="true"><i class="ph ph-fill ph-file-pdf"></i></span>
+                <span>Export PDF</span>
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="laporan-filter-card mb-4 fade-in">
+    <div class="laporan-filter-header">
+        <span class="laporan-filter-title">Filter Laporan</span>
+    </div>
+    <div class="laporan-filter-body">
+        <form method="get" action="{{ path('app_laporan_transaksi') }}" id="filterForm" class="w-100">
+            <input type="hidden" name="filter" value="1">
+            <div class="row g-2 align-items-end">
+                <div class="col-6 col-sm-3 col-md-2 col-lg-1">
+                    <label class="form-label text-3 fs-xs fw-semibold mb-1">Tahun</label>
+                    <select name="tahun" id="tahunSelect" class="form-select form-select-sm">
+                        <option value="0" {% if tahun==0 %}selected{% endif %}>Semua</option>
+                        {% for y in yearsList %}<option value="{{ y }}" {% if tahun==y %}selected{% endif %}>{{ y }}</option>{% endfor %}
+                    </select>
+                </div>
+                <div class="col-6 col-sm-3 col-md-2 col-lg-2">
+                    <label class="form-label text-3 fs-xs fw-semibold mb-1">Bulan</label>
+                    <select name="bulan" id="bulanSelect" class="form-select form-select-sm">
+                        <option value="0" {% if bulan=='0' or bulan=='' %}selected{% endif %}>Semua</option>
+                        {% for mKey,mName in monthsList %}<option value="{{ mKey }}" {% if bulan==mKey %}selected{% endif %}>{{ mName }}</option>{% endfor %}
+                    </select>
+                </div>
+                <div class="col-12 col-sm-6 col-md-3 col-lg-2">
+                    <label class="form-label text-3 fs-xs fw-semibold mb-1">Reseller</label>
+                    <select name="reseller_id" id="resellerSelect" class="form-select form-select-sm">
+                        <option value="0">Semua</option>
+                        {% for r in resellers %}<option value="{{ r.id }}" {% if resellerId==r.id %}selected{% endif %}>{{ r.namaReseller }}</option>{% endfor %}
+                    </select>
+                </div>
+                <div class="col-12 col-sm-6 col-md-3 col-lg-2">
+                    <label class="form-label text-3 fs-xs fw-semibold mb-1">
+                        Kategori
+                        <span id="katLoad" class="d-none fs-xs text-3">loading…</span>
+                    </label>
+                    <select name="kategori_id" id="kategoriSelect" class="form-select form-select-sm">
+                        <option value="0">Semua{% if resellerId>0 %} (reseller ini){% endif %}</option>
+                        {% for k in kategoris %}<option value="{{ k.id }}" {% if kategoriId==k.id %}selected{% endif %}>{{ k.nama_kategori }}{% if k.count_anggota is defined and k.count_anggota>0 %} ({{ k.count_anggota }}){% endif %}</option>{% endfor %}
+                    </select>
+                </div>
+                <div class="col-6 col-sm-6 col-md-2 col-lg-2">
+                    <label class="form-label text-3 fs-xs fw-semibold mb-1">Status Bayar</label>
+                    <select name="status_bayar" id="statusBayarSelect" class="form-select form-select-sm">
+                        <option value="" {% if statusBayar=='' %}selected{% endif %}>Semua Status</option>
+                        <option value="belum_lunas" {% if statusBayar=='belum_lunas' %}selected{% endif %}>Belum Lunas</option>
+                        <option value="lunas" {% if statusBayar=='lunas' %}selected{% endif %}>Lunas</option>
+                        <option value="menunggak" {% if statusBayar=='menunggak' %}selected{% endif %}>Semua Menunggak</option>
+                    </select>
+                </div>
+                <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+                    <label class="form-label text-3 fs-xs fw-semibold mb-1">Cari anggota</label>
+                    <div class="input-group input-group-sm">
+                        <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Nama atau kode…">
+                        <button type="submit" class="btn btn-primary" title="Cari"><i class="ph ph-magnifying-glass"></i></button>
+                        <a href="{{ path('app_laporan_transaksi') }}" class="btn btn-secondary" title="Reset"><i class="ph ph-x"></i></a>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="row g-3 mb-4 fade-in">
+    <div class="col-6 col-xl-3">
+        <div class="laporan-stat s-blue">
+            <div class="stat-label">Anggota <small>({{ tahunLabel }}, {{ resellerLabel }})</small></div>
+            <div class="stat-val">{{ totalAnggota|number_format(0,',','.') }}</div>
+        </div>
+    </div>
+    <div class="col-6 col-xl-3">
+        <div class="laporan-stat s-green">
+            <div class="stat-label">Total Bayar</div>
+            <div class="stat-val">Rp {{ totalBayar|number_format(0,',','.') }}</div>
+        </div>
+    </div>
+    <div class="col-6 col-xl-3">
+        <div class="laporan-stat s-info">
+            <div class="stat-label">Total Target</div>
+            <div class="stat-val">Rp {{ totalTarget|number_format(0,',','.') }}</div>
+        </div>
+    </div>
+    <div class="col-6 col-xl-3">
+        <div class="laporan-stat s-danger">
+            <div class="stat-label">Total Sisa</div>
+            <div class="stat-val">Rp {{ totalSisa|number_format(0,',','.') }}</div>
+        </div>
+    </div>
+</div>
+
+<div class="card fade-in">
+    <div class="table-responsive" style="max-height:70vh;overflow:auto;">
+        <table class="data-table" style="min-width:1060px;">
+            <thead class="sticky-top z-3">
+                <tr>
+                    <th rowspan="2" class="text-center" style="width:50px;position:sticky;left:0;z-index:4;">#</th>
+                    <th rowspan="2" style="min-width:200px;position:sticky;left:50px;z-index:4;">Anggota</th>
+                    <th colspan="{{ monthKeys|length }}" class="text-center">Setoran per Bulan — {{ tahunLabel }}</th>
+                    <th rowspan="2" class="text-end" style="min-width:110px;">Total Bayar</th>
+                    <th rowspan="2" class="text-end" style="min-width:100px;">Target</th>
+                    <th rowspan="2" class="text-center" style="min-width:100px;">Sisa</th>
+                </tr>
+                <tr>
+                    {% for mk in monthKeys %}<th class="text-center" style="width:110px;">{{ monthLabels[mk] }}</th>{% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for category, items in groupedRows %}
+                <tr class="is-group">
+                    <td colspan="{{ 5 + monthKeys|length }}" class="fw-bold text-accent fs-base" style="letter-spacing:0.5px;padding:12px 16px">
+                        <i class="ph ph-tag me-2 opacity-75"></i>{{ category }}
+                    </td>
+                </tr>
+                {% for row in items %}
+                <tr class="transition-colors hover-bg-light">
+                    <td class="text-center text-muted bg-surface fs-sm" style="position:sticky;left:0;z-index:1">{{ (currentPage-1)*25 + loop.index }}</td>
+                    <td style="position:sticky;left:50px;z-index:1" class="border-end bg-surface">
+                        <div class="fw-semibold text-dark">{{ row.nama_anggota }}</div>
+                        <div class="text-muted fs-xs">{{ row.kode_anggota }}</div>
+                    </td>
+                    {% for mk in monthKeys %}
+                        <td class="text-end" style="font-size: 13px; {% if row.months[mk] == 0 %}color:var(--text-3);{% endif %}">
+                            {% if row.months[mk] > 0 %}
+                                {{ _self.money(row.months[mk]) }}
+                            {% else %}
+                                <span class="text-muted opacity-50">—</span>
+                            {% endif %}
+                        </td>
+                    {% endfor %}
+                    <td class="text-end fw-bold text-success">{{ _self.money(row.total_bayar) }}</td>
+                    <td class="text-end text-muted">{{ _self.money(row.target) }}</td>
+                    <td class="text-center">
+                        {% set pct = row.target > 0 ? min(100, ((row.total_bayar / row.target) * 100)|round) : 100 %}
+                        {% if row.sisa == 0 %}
+                            <span class="badge badge-green"><i class="ph ph-check-circle me-1"></i>LUNAS</span>
+                        {% elseif row.total_bayar > 0 %}
+                            <div class="d-flex flex-column align-items-center gap-1">
+                                <span class="badge badge-yellow">{{ _self.money(row.sisa) }}</span>
+                                <div class="progress w-100" style="height:4px;max-width:70px;background:rgba(0,0,0,0.08);" title="{{ pct }}% dari target">
+                                    <div class="progress-bar bg-warning" role="progressbar" style="width: {{ pct }}%"></div>
+                                </div>
+                            </div>
+                        {% else %}
+                            <span class="badge badge-red">{{ _self.money(row.sisa) }}</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+                {% else %}
+                <tr>
+                    <td colspan="{{ monthKeys|length + 5 }}">
+                        <div class="empty">
+                            <i class="ph {% if isFiltered %}ph-inbox{% else %}ph-funnel{% endif %}"></i>
+                            <div class="empty-title">{% if isFiltered %}Tidak ada data transaksi{% else %}Pilih Filter Laporan{% endif %}</div>
+                            <div class="empty-sub">{% if isFiltered %}Ubah kriteria filter untuk menemukan data.{% else %}Tentukan Tahun, Reseller, atau Paket terlebih dahulu lalu klik ikon Cari untuk menampilkan data laporan.{% endif %}</div>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot class="sticky-bottom z-3">
+                <tr class="fw-bold text-dark">
+                    <td colspan="2" class="px-3 py-3">
+                        <i class="ph ph-calculator me-2"></i>Total Keseluruhan ({{ totalAnggota|number_format(0,',','.') }} Anggota)
+                    </td>
+                    {% for mk in monthKeys %}
+                        <td class="text-end py-3 fs-6">
+                            {% if monthlyTotals[mk] > 0 %}
+                                {{ _self.money(monthlyTotals[mk]) }}
+                            {% else %}
+                                <span class="opacity-50">—</span>
+                            {% endif %}
+                        </td>
+                    {% endfor %}
+                    <td class="text-end py-3 fs-6 text-success">{{ _self.money(totalBayar) }}</td>
+                    <td class="text-end py-3 fs-6">{{ _self.money(totalTarget) }}</td>
+                    <td class="text-center py-3 fs-6 text-danger">{{ _self.money(totalSisa) }}</td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+
+    {% if totalPages > 1 %}
+        <div class="pager">
+            <div class="pager-text">Hal. {{ currentPage }} / {{ totalPages }}, {{ totalAnggota|number_format(0,',','.') }} anggota</div>
+            <div class="pager-links">
+                {% if currentPage <= 1 %}
+                    <span><i class="ph ph-caret-left"></i></span>
+                {% else %}
+                    <a href="{{ path('app_laporan_transaksi', {filter:1,tahun:tahun,bulan:bulan,reseller_id:resellerId,kategori_id:kategoriId,status_bayar:statusBayar,q:q,page:currentPage-1}) }}"><i class="ph ph-caret-left"></i></a>
+                {% endif %}
+                
+                {% for p in max(1,currentPage-2)..min(totalPages,currentPage+2) %}
+                    {% if p == currentPage %}
+                        <a href="{{ path('app_laporan_transaksi', {filter:1,tahun:tahun,bulan:bulan,reseller_id:resellerId,kategori_id:kategoriId,status_bayar:statusBayar,q:q,page:p}) }}" class="active">{{ p }}</a>
+                    {% else %}
+                        <a href="{{ path('app_laporan_transaksi', {filter:1,tahun:tahun,bulan:bulan,reseller_id:resellerId,kategori_id:kategoriId,status_bayar:statusBayar,q:q,page:p}) }}">{{ p }}</a>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if currentPage >= totalPages %}
+                    <span><i class="ph ph-caret-right"></i></span>
+                {% else %}
+                    <a href="{{ path('app_laporan_transaksi', {filter:1,tahun:tahun,bulan:bulan,reseller_id:resellerId,kategori_id:kategoriId,status_bayar:statusBayar,q:q,page:currentPage+1}) }}"><i class="ph ph-caret-right"></i></a>
+                {% endif %}
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+</div>
+
+<style>
+.laporan { max-width: 1600px; margin: 0 auto; }
+
+.laporan-filter-card { background: var(--bg-sub); border: 1px solid var(--border); border-radius: var(--radius); }
+.laporan-filter-header { padding: 12px 16px; border-bottom: 1px solid var(--border); }
+.laporan-filter-title { font-size: var(--fs-base); font-weight: 600; color: var(--text); }
+.laporan-filter-body { padding: 16px; }
+
+.laporan-stat { background: var(--bg-sub); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; position: relative; overflow: hidden; }
+.laporan-stat::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+.laporan-stat.s-blue::before { background: var(--info); }
+.laporan-stat.s-green::before { background: var(--success); }
+.laporan-stat.s-info::before { background: var(--info); }
+.laporan-stat.s-danger::before { background: var(--danger); }
+.laporan-stat .stat-label { font-size: var(--fs-xs); font-weight: 600; color: var(--text-3); margin-bottom: 6px; }
+.laporan-stat .stat-val { font-size: clamp(1.1rem, 2vw, 1.4rem); font-weight: 700; color: var(--text); line-height: 1.2; letter-spacing: -.02em; }
+
+.export-pdf-btn { padding: 7px 11px; }
+.export-pdf-icon { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: var(--radius-sm); background: rgba(255, 255, 255, .18); background: color-mix(in srgb, var(--accent-fg) 20%, transparent); font-size: 13px; }
+@media (max-width: 575px) { .export-pdf-btn { padding: 7px 9px; } .export-pdf-btn > span:last-child { display: none; } }
+
+.data-table th[style*="position:sticky"],
+.data-table td[style*="position:sticky"] {
+    background-color: var(--bg-surface, #ffffff);
+}
+.data-table thead th {
+    background-color: var(--bg-sub, #f8f9fa);
+}
+
+@media print {
+    nav, .app-sidebar, .app-topbar, .page-hd .btn, .laporan-filter-card, .pager, footer, .d-print-none {
+        display: none !important;
+    }
+    body {
+        background: #fff !important;
+        color: #000 !important;
+        font-size: 10pt !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    .app-main, .page-body, .container-fluid {
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+    .card {
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+    }
+    .table-responsive {
+        max-height: none !important;
+        overflow: visible !important;
+    }
+    .data-table {
+        min-width: 100% !important;
+        width: 100% !important;
+        font-size: 8.5pt !important;
+        border-collapse: collapse !important;
+    }
+    .data-table th, .data-table td {
+        border: 1px solid #ccc !important;
+        padding: 4px 6px !important;
+        position: static !important;
+        background: transparent !important;
+    }
+    .laporan-stat {
+        border: 1px solid #ccc !important;
+        box-shadow: none !important;
+    }
+    .badge {
+        border: 1px solid #777 !important;
+        color: #000 !important;
+        background: transparent !important;
+    }
+    .progress {
+        display: none !important;
+    }
+}
+</style>
+
+{% endblock %}
+
+{% block javascripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const form = document.getElementById('filterForm');
+    const resellerSel = document.getElementById('resellerSelect');
+    const kategoriSel = document.getElementById('kategoriSelect');
+    const katLoad = document.getElementById('katLoad');
+
+    ['tahunSelect','bulanSelect','kategoriSelect','statusBayarSelect'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('change', () => form.submit());
+    });
+
+    resellerSel?.addEventListener('change', function () {
+        const rid = this.value;
+        if (!rid || rid === '0') { kategoriSel.innerHTML = '<option value="0">Semua</option>'; form.submit(); return; }
+        if (katLoad) katLoad.classList.remove('d-none');
+        kategoriSel.disabled = true;
+        fetch('{{ path("app_kolektif_kategori_by_reseller") }}?reseller_id=' + encodeURIComponent(rid))
+            .then(r => r.json())
+            .then(data => {
+                kategoriSel.innerHTML = '<option value="0">Semua (reseller ini)</option>';
+                data.forEach(item => {
+                    const o = document.createElement('option');
+                    o.value = item.id;
+                    o.textContent = item.nama_kategori;
+                    kategoriSel.appendChild(o);
+                });
+            })
+            .catch(() => {})
+            .finally(() => { if (katLoad) katLoad.classList.add('d-none'); kategoriSel.disabled = false; form.submit(); });
+    });
+});
+</script>
+{% endblock %}

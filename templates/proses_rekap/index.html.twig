@@ -1,0 +1,422 @@
+{% extends 'base.html.twig' %}
+{% block title %}Rekapitulasi Periode — Zeran Parcel{% endblock %}
+
+{% block stylesheets %}
+<style>
+    .proses-rekap { max-width: 1600px; margin: 0 auto; }
+    .pr-filter-card { background: var(--bg-sub); border: 1px solid var(--border); border-radius: var(--radius); }
+    .pr-filter-header { padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+    .pr-filter-title { font-size: var(--fs-base); font-weight: 600; color: var(--text); }
+    .pr-filter-body { padding: 16px; }
+    .pr-stat { background: var(--bg-sub); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; position: relative; overflow: hidden; }
+    .pr-stat::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+    .pr-stat.s-accent::before { background: var(--accent); }
+    .pr-stat.s-success::before { background: var(--success); }
+    .pr-stat.s-info::before { background: var(--info); }
+    .pr-stat.s-blue::before { background: var(--accent); }
+    .pr-stat .stat-label { font-size: var(--fs-xs); font-weight: 600; color: var(--text-3); margin-bottom: 6px; }
+    .pr-stat .stat-val { font-size: clamp(1.1rem, 2vw, 1.4rem); font-weight: 700; color: var(--text); line-height: 1.2; letter-spacing: -.02em; }
+    .pr-stat .stat-val.text-success { color: var(--success); }
+    .pr-stat .stat-sub { font-size: var(--fs-xs); color: var(--text-3); margin-top: 4px; }
+    .pr-table td, .pr-table th { vertical-align: middle; }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="proses-rekap">
+
+<div class="page-hd">
+    <div class="page-hd-row">
+        <div>
+            <h1>Rekapitulasi Periode</h1>
+            <p>Verifikasi transaksi setoran untuk dimasukkan ke rekap komisi.</p>
+        </div>
+        <a href="{{ path('app_setoran_tujuan_index') }}" class="btn btn-secondary"><i class="ph ph-bank me-1"></i> Rekap Komisi</a>
+    </div>
+</div>
+
+<!-- Filter -->
+<div class="pr-filter-card mb-3">
+    <div class="pr-filter-header">
+        <div class="pr-filter-title">Filter Transaksi</div>
+    </div>
+    <div class="pr-filter-body">
+        <form method="get" action="{{ path('app_proses_rekap_index') }}" id="filterForm" class="row g-2 align-items-end">
+            <input type="hidden" name="filter" value="1">
+            <div class="col-6 col-sm-3 col-md-2 col-lg-1">
+                <label class="form-label text-3 fs-xs fw-semibold mb-1">Tahun</label>
+                <select name="tahun" id="tahunSelect" class="form-select form-select-sm">
+                    <option value="0" {% if tahun==0 %}selected{% endif %}>Semua</option>
+                    {% for y in yearsList %}<option value="{{ y }}" {% if tahun==y %}selected{% endif %}>{{ y }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="col-6 col-sm-3 col-md-2 col-lg-2">
+                <label class="form-label text-3 fs-xs fw-semibold mb-1">Bulan</label>
+                <select name="bulan" id="bulanSelect" class="form-select form-select-sm">
+                    <option value="0" {% if bulan=='0' or bulan=='' %}selected{% endif %}>Semua</option>
+                    {% for mKey,mName in monthsList %}<option value="{{ mKey }}" {% if bulan==mKey %}selected{% endif %}>{{ mName }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="col-12 col-sm-6 col-md-3 col-lg-2">
+                <label class="form-label text-3 fs-xs fw-semibold mb-1">Reseller</label>
+                <select name="reseller_id" id="resellerSelect" class="form-select form-select-sm">
+                    <option value="0">Semua</option>
+                    {% for r in resellers %}<option value="{{ r.id }}" {% if resellerId==r.id %}selected{% endif %}>{{ r.namaReseller }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="col-12 col-sm-6 col-md-3 col-lg-2">
+                <label class="form-label text-3 fs-xs fw-semibold mb-1">Kategori / Paket <span id="katLoad" class="spinner-border spinner-border-sm text-primary d-none ms-1" style="width:12px;height:12px"></span></label>
+                <select name="kategori_id" id="kategoriSelect" class="form-select form-select-sm">
+                    <option value="0">Semua Kategori</option>
+                    {% for k in kategoris %}
+                        <option value="{{ k.id }}" {% if kategoriId==k.id %}selected{% endif %}>{{ k.nama_kategori }}{% if k.count_anggota is defined and k.count_anggota > 0 %} ({{ k.count_anggota }}){% endif %}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-6 col-sm-6 col-md-2 col-lg-2">
+                <label class="form-label text-3 fs-xs fw-semibold mb-1">Status</label>
+                <select name="status" id="statusSelect" class="form-select form-select-sm">
+                    <option value="waiting"  {% if status=='waiting'  %}selected{% endif %}>Belum rekap</option>
+                    <option value="included" {% if status=='included' %}selected{% endif %}>Sudah rekap</option>
+                    <option value="all"      {% if status=='all'      %}selected{% endif %}>Semua status</option>
+                </select>
+            </div>
+            <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+                <label class="form-label text-3 fs-xs fw-semibold mb-1">Cari anggota</label>
+                <div class="input-group input-group-sm">
+                    <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Nama atau kode...">
+                    <button type="submit" class="btn btn-primary" title="Cari"><i class="ph ph-magnifying-glass"></i></button>
+                    <a href="{{ path('app_proses_rekap_index') }}" class="btn btn-secondary" title="Reset"><i class="ph ph-x"></i></a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- KPI mini -->
+<div class="row g-3 mb-3">
+    <div class="col-6 col-md-3">
+        <div class="pr-stat s-accent">
+            <div class="stat-label">Belum Rekap</div>
+            <div class="stat-val">{{ summary.total_tunggu|number_format(0,',','.') }}</div>
+            <div class="stat-sub">Rp {{ summary.nominal_tunggu|number_format(0,',','.') }}</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="pr-stat s-success">
+            <div class="stat-label">Sudah Rekap</div>
+            <div class="stat-val text-success">{{ summary.total_masuk|number_format(0,',','.') }}</div>
+            <div class="stat-sub">Rp {{ summary.nominal_masuk|number_format(0,',','.') }}</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="pr-stat s-info">
+            <div class="stat-label">Total Mutasi</div>
+            <div class="stat-val">{{ summary.total_transaksi|number_format(0,',','.') }}</div>
+            <div class="stat-sub">Rp {{ summary.total_nominal|number_format(0,',','.') }}</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="pr-stat s-blue">
+            <div class="stat-label">Ditampilkan</div>
+            <div class="stat-val">{{ totalItems|number_format(0,',','.') }}</div>
+            <div class="stat-sub">
+                {% if status=='waiting' %}<span class="badge badge-yellow">Belum rekap</span>
+                {% elseif status=='included' %}<span class="badge badge-green">Sudah rekap</span>
+                {% else %}<span class="badge">Semua</span>{% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if hasFilter %}
+<!-- Batch form -->
+<form method="post" action="{{ path('app_proses_rekap_update') }}" id="rekapForm">
+    <input type="hidden" name="_token" value="{{ csrf_token('app_proses_rekap_update') }}">
+    <input type="hidden" name="filter_tahun" value="{{ tahun }}">
+    <input type="hidden" name="filter_bulan" value="{{ bulan }}">
+    <input type="hidden" name="filter_reseller_id" value="{{ resellerId }}">
+    <input type="hidden" name="filter_kategori_id" value="{{ kategoriId }}">
+    <input type="hidden" name="filter_status" value="{{ status }}">
+    <input type="hidden" name="filter_q" value="{{ q }}">
+    <input type="hidden" name="select_all_matching" id="selectAllMatchingInput" value="0">
+
+    <!-- Toolbar -->
+    <div class="card mb-3">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 p-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="form-check mb-0">
+                    <input type="checkbox" id="checkAll" class="form-check-input cursor-pointer" style="width:1.2em;height:1.2em">
+                    <label class="form-check-label fw-medium ms-1 cursor-pointer text-1" for="checkAll">Pilih semua di halaman</label>
+                </div>
+                <span class="badge badge-blue px-3 py-2" id="selectedBadge">0 dipilih</span>
+                <span class="badge badge-green px-3 py-2 d-none" id="selectedNominalBadge">Rp 0</span>
+            </div>
+            <div class="d-flex gap-2">
+                <button type="submit" name="rekap_action" value="exclude" class="btn btn-light border fw-medium px-4"
+                        onclick="return confirmAction('tahan dari Rekap');">
+                    <i class="ph ph-pause-circle me-1"></i> Tahan
+                </button>
+                <button type="submit" name="rekap_action" value="include" class="btn btn-primary fw-medium px-4"
+                        onclick="return confirmAction('masukkan ke Rekap');">
+                    <i class="ph ph-fill ph-check-circle me-1"></i> Masukkan ke Rekap
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Select-all banners -->
+    {% if totalItems > transaksiList|length %}
+    <div class="d-none mb-2 notice" id="selectAllBanner">
+        <span>Semua <strong>{{ transaksiList|length }}</strong> di halaman ini dipilih.</span>
+        <button type="button" class="btn btn-secondary fs-sm" style="padding:4px 8px" onclick="toggleSelectAllMatching(true)">
+            Pilih semua <strong>{{ totalItems|number_format(0,',','.') }}</strong> sesuai filter
+        </button>
+    </div>
+    <div class="d-none mb-2 notice" id="selectAllActiveBanner">
+        <span>Semua <strong>{{ totalItems|number_format(0,',','.') }}</strong> transaksi sesuai filter dipilih.</span>
+        <button type="button" class="btn btn-secondary fs-sm" style="padding:4px 8px" onclick="toggleSelectAllMatching(false)">Batalkan</button>
+    </div>
+    {% endif %}
+
+    <div class="card">
+        <div class="table-responsive">
+            <table class="data-table pr-table">
+                <thead>
+                    <tr>
+                        <th style="width:40px;" class="text-center">#</th>
+                        <th style="width:60px;">ID</th>
+                        <th style="width:115px;">Periode</th>
+                        <th>Anggota</th>
+                        <th>Paket</th>
+                        <th>Reseller</th>
+                        <th class="text-end" style="width:130px;">Nominal</th>
+                        <th class="text-center" style="width:140px;">Status Rekap</th>
+                        <th class="text-center" style="width:100px;">Aksi Cepat</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in transaksiList %}
+                        <tr class="{% if t.masuk_rekap == 1 %}row-included{% endif %} transition-colors">
+                            <td class="text-center">
+                                <input type="checkbox" name="checked_data[]" value="{{ t.id }}" data-nominal="{{ t.nominal }}" class="row-check form-check-input cursor-pointer">
+                            </td>
+                            <td class="text-muted fs-sm">#{{ t.id }}</td>
+                            <td>
+                                <span class="badge">{{ t.bulan|format_periode }}</span>
+                                {% if t.created_at %}
+                                    <div class="fs-xs text-muted mt-1">{{ t.created_at|date('d/m/Y H:i') }}</div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="fw-semibold text-1">{{ t.nama_anggota ?: '—' }}</div>
+                                <div class="fs-xs text-3">{{ t.kode_anggota ?: '' }}</div>
+                            </td>
+                            <td>
+                                <span class="badge badge-sub text-1 fw-semibold">{{ t.nama_kategori ?: '—' }}</span>
+                                {% if t.kode_kategori and t.kode_kategori != '-' %}
+                                    <div class="fs-xs text-muted">{{ t.kode_kategori }}</div>
+                                {% endif %}
+                            </td>
+                            <td class="text-2 fw-medium">{{ t.nama_reseller ?: '—' }}</td>
+                            <td class="text-end fw-bold text-dark">Rp {{ t.nominal|number_format(0,',','.') }}</td>
+                            <td class="text-center">
+                                {% if t.masuk_rekap == 1 %}
+                                    <span class="badge badge-green"><i class="ph ph-check-circle me-1"></i>Sudah rekap</span>
+                                    {% if t.rekap_updated_at %}
+                                        <div class="fs-xs text-3 mt-1"><i class="ph ph-clock me-1"></i>{{ t.rekap_updated_at|date('d/m/y H:i') }}</div>
+                                    {% endif %}
+                                    {% if t.rekap_updated_by %}
+                                        <div class="fs-xs text-muted">oleh <span class="fw-medium text-2">{{ t.rekap_updated_by }}</span></div>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="badge badge-yellow"><i class="ph ph-hourglass me-1"></i>Belum rekap</span>
+                                    {% if t.rekap_updated_by %}
+                                        <div class="fs-xs text-muted mt-1">oleh <span class="fw-medium text-2">{{ t.rekap_updated_by }}</span></div>
+                                    {% endif %}
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                {% if t.masuk_rekap == 1 %}
+                                    <button type="button" class="btn btn-sm btn-light border px-2 w-100 fs-xs"
+                                            data-single-id="{{ t.id }}" data-single-action="exclude"><i class="ph ph-pause-circle me-1"></i>Tahan</button>
+                                {% else %}
+                                    <button type="button" class="btn btn-sm btn-primary px-2 w-100 fs-xs"
+                                            data-single-id="{{ t.id }}" data-single-action="include"><i class="ph ph-check-circle me-1"></i>Masukkan</button>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="10"><div class="empty py-5"><i class="ph ph-inbox fs-1 text-muted"></i><div class="empty-title mt-3">Tidak ada data.</div></div></td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if totalPages > 1 %}
+            <div class="pager">
+                <span class="pager-text">Hal. {{ currentPage }} / {{ totalPages }}, {{ totalItems|number_format(0,',','.') }} transaksi</span>
+                <div class="pager-links">
+                    {% if currentPage > 1 %}<a href="{{ path('app_proses_rekap_index', {tahun:tahun,bulan:bulan,reseller_id:resellerId,kategori_id:kategoriId,status:status,q:q,filter:1,page:currentPage-1}) }}"><i class="ph ph-caret-left"></i></a>{% else %}<span><i class="ph ph-caret-left"></i></span>{% endif %}
+                    {% for p in max(1,currentPage-2)..min(totalPages,currentPage+2) %}<a href="{{ path('app_proses_rekap_index', {tahun:tahun,bulan:bulan,reseller_id:resellerId,kategori_id:kategoriId,status:status,q:q,filter:1,page:p}) }}" {% if p==currentPage %}class="active"{% endif %}>{{ p }}</a>{% endfor %}
+                    {% if currentPage < totalPages %}<a href="{{ path('app_proses_rekap_index', {tahun:tahun,bulan:bulan,reseller_id:resellerId,kategori_id:kategoriId,status:status,q:q,filter:1,page:currentPage+1}) }}"><i class="ph ph-caret-right"></i></a>{% else %}<span><i class="ph ph-caret-right"></i></span>{% endif %}
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</form>
+
+<form method="post" action="{{ path('app_proses_rekap_update') }}" id="singleForm" class="d-none">
+    <input type="hidden" name="_token" value="{{ csrf_token('app_proses_rekap_update') }}">
+    <input type="hidden" name="single_id" id="singleId">
+    <input type="hidden" name="rekap_action" id="singleAction">
+</form>
+{% else %}
+<div class="card">
+    <div class="empty">
+        <i class="ph ph-funnel"></i>
+        <div class="empty-title">Data belum ditampilkan</div>
+        <div class="empty-sub">Pilih filter lalu kirim untuk menampilkan transaksi yang perlu diproses rekap.</div>
+    </div>
+</div>
+{% endif %}
+
+</div>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const form = document.getElementById('filterForm');
+    const resellerSel = document.getElementById('resellerSelect');
+    const kategoriSel = document.getElementById('kategoriSelect');
+    const katLoad = document.getElementById('katLoad');
+
+    ['tahunSelect','bulanSelect','kategoriSelect','statusSelect'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('change', () => form.submit());
+    });
+
+    resellerSel?.addEventListener('change', function () {
+        const rid = this.value;
+        if (!rid || rid === '0') {
+            kategoriSel.innerHTML = '<option value="0">Semua Kategori</option>';
+            form.submit();
+            return;
+        }
+        if (katLoad) katLoad.classList.remove('d-none');
+        kategoriSel.disabled = true;
+        fetch('{{ path("app_kolektif_kategori_by_reseller") }}?reseller_id=' + encodeURIComponent(rid))
+            .then(r => r.json())
+            .then(data => {
+                kategoriSel.innerHTML = '<option value="0">Semua Kategori (reseller ini)</option>';
+                data.forEach(item => {
+                    const o = document.createElement('option');
+                    o.value = item.id;
+                    o.textContent = item.nama_kategori + (item.count_anggota > 0 ? ` (${item.count_anggota})` : '');
+                    kategoriSel.appendChild(o);
+                });
+            })
+            .catch(() => {})
+            .finally(() => {
+                if (katLoad) katLoad.classList.add('d-none');
+                kategoriSel.disabled = false;
+                form.submit();
+            });
+    });
+
+    const checkAll       = document.getElementById('checkAll');
+    const rowChecks      = document.querySelectorAll('.row-check');
+    const badge          = document.getElementById('selectedBadge');
+    const badgeNominal   = document.getElementById('selectedNominalBadge');
+    const allInput       = document.getElementById('selectAllMatchingInput');
+    const bannerSel      = document.getElementById('selectAllBanner');
+    const bannerAct      = document.getElementById('selectAllActiveBanner');
+
+    function updateCount() {
+        if (allInput?.value === '1') {
+            if (badge) { badge.textContent = '{{ totalItems|number_format(0,",",".") }} dipilih'; }
+            if (badgeNominal) { badgeNominal.classList.add('d-none'); }
+            return;
+        }
+        const checkedBoxes = [...rowChecks].filter(c => c.checked);
+        const n = checkedBoxes.length;
+        if (badge) badge.textContent = n + ' dipilih';
+
+        if (n > 0 && badgeNominal) {
+            const sumNominal = checkedBoxes.reduce((acc, cb) => acc + (parseFloat(cb.getAttribute('data-nominal')) || 0), 0);
+            badgeNominal.textContent = 'Rp ' + new Intl.NumberFormat('id-ID').format(sumNominal);
+            badgeNominal.classList.remove('d-none');
+        } else if (badgeNominal) {
+            badgeNominal.classList.add('d-none');
+        }
+
+        const allPage = n > 0 && n === rowChecks.length;
+        if (bannerSel) bannerSel.classList.toggle('d-none', !allPage);
+        if (bannerAct) bannerAct.classList.add('d-none');
+    }
+
+    checkAll?.addEventListener('change', function () {
+        rowChecks.forEach(c => c.checked = this.checked);
+        if (!this.checked && allInput) allInput.value = '0';
+        updateCount();
+    });
+
+    rowChecks.forEach(cb => cb.addEventListener('change', function () {
+        if (!this.checked) { if (checkAll) checkAll.checked = false; if (allInput) allInput.value = '0'; }
+        updateCount();
+    }));
+});
+
+function toggleSelectAllMatching(enable) {
+    const input = document.getElementById('selectAllMatchingInput');
+    const bs = document.getElementById('selectAllBanner');
+    const ba = document.getElementById('selectAllActiveBanner');
+    const bd = document.getElementById('selectedBadge');
+    const bn = document.getElementById('selectedNominalBadge');
+    if (input) input.value = enable ? '1' : '0';
+    if (enable) {
+        bs?.classList.add('d-none');
+        ba?.classList.remove('d-none');
+        if (bd) bd.textContent = '{{ totalItems|number_format(0,",",".") }} dipilih';
+        if (bn) bn.classList.add('d-none');
+    } else {
+        bs?.classList.remove('d-none');
+        ba?.classList.add('d-none');
+        const checked = [...document.querySelectorAll('.row-check:checked')];
+        if (bd) bd.textContent = checked.length + ' dipilih';
+        if (bn && checked.length > 0) {
+            const sum = checked.reduce((acc, cb) => acc + (parseFloat(cb.getAttribute('data-nominal')) || 0), 0);
+            bn.textContent = 'Rp ' + new Intl.NumberFormat('id-ID').format(sum);
+            bn.classList.remove('d-none');
+        }
+    }
+}
+
+function confirmAction(actionName) {
+    const isAll = document.getElementById('selectAllMatchingInput')?.value === '1';
+    if (isAll) return confirm('Apakah Anda yakin ingin ' + actionName + ' sebanyak {{ totalItems|number_format(0,",",".") }} transaksi?');
+    const checked = document.querySelectorAll('.row-check:checked');
+    if (checked.length === 0) { alert('Pilih minimal satu transaksi.'); return false; }
+    const sum = [...checked].reduce((acc, cb) => acc + (parseFloat(cb.getAttribute('data-nominal')) || 0), 0);
+    const sumStr = ' (Total Rp ' + new Intl.NumberFormat('id-ID').format(sum) + ')';
+    return confirm('Apakah Anda yakin ingin ' + actionName + ' sebanyak ' + checked.length + ' transaksi' + sumStr + '?');
+}
+
+function submitSingle(id, action) {
+    const msg = action === 'include' ? 'masukkan ke Rekap' : 'tahan dari Rekap';
+    if (confirm('Apakah Anda yakin ingin ' + msg + ' transaksi #' + id + '?')) {
+        document.getElementById('singleId').value = id;
+        document.getElementById('singleAction').value = action;
+        document.getElementById('singleForm').submit();
+    }
+}
+
+document.addEventListener('click', function (event) {
+    const btn = event.target.closest('[data-single-id]');
+    if (btn) {
+        submitSingle(btn.getAttribute('data-single-id'), btn.getAttribute('data-single-action'));
+    }
+});
+</script>
+{% endblock %}

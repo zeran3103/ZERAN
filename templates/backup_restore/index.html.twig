@@ -1,0 +1,778 @@
+{% extends 'base.html.twig' %}
+{% block title %}Cadangan Basis Data — Zeran Parcel{% endblock %}
+
+{% block stylesheets %}
+<style>
+    .backup { max-width: 1600px; margin: 0 auto; }
+    .bk-stat { background: var(--bg-sub); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; position: relative; overflow: hidden; }
+    .bk-stat::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+    .bk-stat.s-accent::before { background: var(--accent); }
+    .bk-stat.s-success::before { background: var(--success); }
+    .bk-stat.s-info::before { background: var(--info); }
+    .bk-stat.s-warning::before { background: var(--warning); }
+    .bk-stat .stat-label { font-size: var(--fs-xs); font-weight: 600; color: var(--text-3); margin-bottom: 6px; }
+    .bk-stat .stat-val { font-size: clamp(1.1rem, 2vw, 1.4rem); font-weight: 700; color: var(--text); line-height: 1.2; letter-spacing: -.02em; }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="backup">
+<div class="page-hd fade-in">
+    <div class="page-hd-row">
+        <div>
+            <h1>Cadangan Basis Data</h1>
+            <p>Kelola arsip database, otomatisasi offsite cloud, serta audit integritas relasi data.</p>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            <a href="{{ path('app_backup_restore') }}" class="btn btn-secondary d-flex align-items-center gap-2">
+                <i class="ph ph-arrow-clockwise"></i> Refresh
+            </a>
+            <form method="post" action="{{ path('app_backup_run') }}" class="m-0">
+                <input type="hidden" name="_token" value="{{ csrf_token('app_backup_run') }}">
+                <button type="submit" class="btn btn-primary d-flex align-items-center gap-2" data-confirm="Proses ini akan membuat file backup baru terenkripsi. Lanjutkan?">
+                    <i class="ph ph-hard-drives fs-5"></i> Buat Backup Sekarang
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+{# ── STAT METRICS ─────────────────────────────────────────── #}
+<div class="row g-3 mb-4 fade-in">
+    <div class="col-6 col-md-3">
+        <div class="bk-stat s-accent h-100">
+            <div class="stat-label">Total Arsip Cadangan</div>
+            <div class="stat-val">{{ backups|length }} <span class="fs-6 fw-normal text-muted">file</span></div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="bk-stat s-info h-100">
+            <div class="stat-label">Kapasitas Disk</div>
+            <div class="stat-val">
+                {% if totalSize|default(0) >= 1048576 %}
+                    {{ (totalSize / 1048576)|number_format(1, ',', '.') }} <span class="fs-6 fw-normal text-muted">MB</span>
+                {% else %}
+                    {{ (totalSize|default(0) / 1024)|number_format(1, ',', '.') }} <span class="fs-6 fw-normal text-muted">KB</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="bk-stat s-success h-100">
+            <div class="stat-label">Auto-Backup Lokal</div>
+            <div class="stat-val" style="font-size: var(--fs-base);">
+                {% if settings.auto_backup_enabled|default('0') == '1' %}
+                    <span class="text-success"><i class="ph ph-check-circle me-1"></i>Aktif</span>
+                    <span class="fs-6 fw-normal text-muted">({{ {'hourly': '1 jam', 'daily': '1 hari', 'weekly': '1 minggu'}[settings.auto_backup_interval|default('daily')] }})</span>
+                {% else %}
+                    <span class="text-secondary"><i class="ph ph-x-circle me-1"></i>Nonaktif</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="bk-stat s-warning h-100">
+            <div class="stat-label">Google Drive Offsite</div>
+            <div class="stat-val" style="font-size: var(--fs-base);">
+                {% if settings.gdrive_backup_enabled|default('0') == '1' %}
+                    <span class="text-success"><i class="ph ph-cloud-check me-1"></i>Terkoneksi</span>
+                {% else %}
+                    <span class="text-muted"><i class="ph ph-cloud-slash me-1"></i>Nonaktif</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{# ── STATUS BANNER ─────────────────────────────────────────── #}
+<div class="alert {% if backupStatus.status|default('unknown') == 'success' %}alert-success{% elseif backupStatus.status|default('unknown') == 'failed' %}alert-danger{% else %}alert-info{% endif %} d-flex align-items-center justify-content-between flex-wrap gap-2 py-2 px-3 mb-4 fade-in">
+    <div class="d-flex align-items-center gap-2 small">
+        <i class="ph ph-shield-check fs-5"></i>
+        <span>
+            Status backup terakhir: <strong>{{ backupStatus.status|default('unknown')|upper }}</strong>.
+            Format terenkripsi <strong>AES-256-GCM</strong> aktif via <code>BACKUP_ENCRYPTION_KEY</code>.
+        </span>
+    </div>
+    {% if backupStatus.completed_at|default(null) %}
+        <span class="small opacity-75">
+            <i class="ph ph-clock me-1"></i>{{ backupStatus.completed_at|date('d/m/Y H:i:s') }}
+        </span>
+    {% endif %}
+</div>
+
+{% set total_anomalies = anomalies|length %}
+{% set total_orphans = orphans.count_trx_no_anggota + orphans.count_trx_no_kategori + orphans.anggota_no_relasi|length %}
+{% set total_issues = total_anomalies + total_orphans %}
+
+{# ── TABS CONTAINER ───────────────────────────────────────── #}
+<div x-data="{ tab: 'backup', showUpload: false }" class="fade-in">
+    <!-- Segmented Navigation Tabs -->
+    <div class="d-flex flex-wrap gap-2 mb-4 p-1 rounded-3" style="background: var(--bg-hover); border: var(--border-thin);">
+        <button type="button"
+                class="btn btn-sm d-flex align-items-center gap-2 px-3 py-2 border-0 fw-semibold rounded-2 transition-colors"
+                :class="tab === 'backup' ? 'btn-light shadow-sm' : 'text-muted bg-transparent'"
+                @click="tab = 'backup'">
+            <i class="ph ph-archive"></i> Arsip Cadangan
+            <span class="badge rounded-pill" :class="tab === 'backup' ? 'badge-blue' : 'badge-sub'">{{ backups|length }}</span>
+        </button>
+
+        <button type="button"
+                class="btn btn-sm d-flex align-items-center gap-2 px-3 py-2 border-0 fw-semibold rounded-2 transition-colors"
+                :class="tab === 'automation' ? 'btn-light shadow-sm' : 'text-muted bg-transparent'"
+                @click="tab = 'automation'">
+            <i class="ph ph-gear-six"></i> Otomatisasi &amp; Cloud
+            {% if settings.auto_backup_enabled|default('0') == '1' or settings.gdrive_backup_enabled|default('0') == '1' %}
+                <span class="badge rounded-pill badge-green">Aktif</span>
+            {% endif %}
+        </button>
+
+        <button type="button"
+                class="btn btn-sm d-flex align-items-center gap-2 px-3 py-2 border-0 fw-semibold rounded-2 transition-colors"
+                :class="tab === 'integrity' ? 'btn-light shadow-sm' : 'text-muted bg-transparent'"
+                @click="tab = 'integrity'">
+            <i class="ph ph-shield-check"></i> Integritas Data
+            {% if total_issues > 0 %}
+                <span class="badge rounded-pill badge-red">{{ total_issues }}</span>
+            {% else %}
+                <span class="badge rounded-pill badge-green"><i class="ph ph-check"></i></span>
+            {% endif %}
+        </button>
+
+        <button type="button"
+                class="btn btn-sm d-flex align-items-center gap-2 px-3 py-2 border-0 fw-semibold rounded-2 transition-colors ms-md-auto"
+                :class="tab === 'danger' ? 'btn-danger text-white' : 'text-danger bg-transparent'"
+                @click="tab = 'danger'">
+            <i class="ph ph-warning-octagon"></i> Area Berbahaya
+        </button>
+    </div>
+
+    <!-- Tab 1: Arsip Cadangan -->
+    <div x-show="tab === 'backup'" x-transition.opacity.duration.200ms>
+        <!-- Notice & Quick Upload Trigger -->
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+            <div class="d-flex align-items-center gap-2 small text-muted">
+                <i class="ph ph-info text-primary fs-5"></i>
+                <span>Memulihkan data akan menimpa database dengan file pilihan. Selalu simpan cadangan sebelum merestore.</span>
+            </div>
+            <button type="button" class="btn btn-sm btn-secondary d-flex align-items-center gap-2" @click="showUpload = !showUpload">
+                <i class="ph" :class="showUpload ? 'ph-x' : 'ph-upload-simple'"></i>
+                <span x-text="showUpload ? 'Tutup Form Upload' : 'Unggah File Backup'"></span>
+            </button>
+        </div>
+
+        <!-- Collapsible Upload Panel -->
+        <div x-show="showUpload" x-transition class="card mb-4" style="background: var(--bg-sub); border: 1px dashed var(--border-strong);">
+            <div class="card-body p-4">
+                <h6 class="fw-bold mb-1"><i class="ph ph-upload-simple me-2 text-primary"></i>Unggah Arsip Cadangan Manual</h6>
+                <p class="text-muted small mb-3">Pilih file <code>.sql</code> standar atau <code>.sql.enc</code> terenkripsi dari komputer Anda untuk disimpan ke direktori backup server.</p>
+                <form method="post" action="{{ path('app_backup_upload') }}" enctype="multipart/form-data" class="row g-3 align-items-center">
+                    <input type="hidden" name="_token" value="{{ csrf_token('app_backup_upload') }}">
+                    <div class="col-12 col-md-8">
+                        <input type="file" name="backup_file" class="form-control" accept=".sql,.enc" required>
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <button type="submit" class="btn btn-primary w-100 d-flex align-items-center justify-content-center gap-2">
+                            <i class="ph ph-cloud-arrow-up"></i> Upload Sekarang
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Backup Table Card -->
+        <div class="card">
+            {% if backups|length > 0 %}
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th class="text-center text-muted" style="width: 50px;">#</th>
+                                <th>Nama File Cadangan</th>
+                                <th>Format &amp; Keamanan</th>
+                                <th class="text-end">Ukuran</th>
+                                <th>Waktu Pembuatan</th>
+                                <th class="text-end" style="width: 240px;">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for backup in backups %}
+                                <tr>
+                                    <td class="text-center text-muted small">{{ loop.index }}</td>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <i class="ph ph-file-sql fs-5 text-muted"></i>
+                                            <span class="fw-bold text-1 small">{{ backup.name }}</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if backup.valid %}
+                                            {% if backup.encrypted %}
+                                                <span class="badge badge-green"><i class="ph ph-lock-key me-1"></i>AES-256-GCM</span>
+                                            {% else %}
+                                                <span class="badge badge-yellow"><i class="ph ph-file-code me-1"></i>Legacy .sql</span>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="badge badge-red"><i class="ph ph-x-circle me-1"></i>Tidak valid</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end small text-muted">
+                                        {% if backup.size >= 1048576 %}
+                                            {{ (backup.size / 1048576)|number_format(1, ',', '.') }} MB
+                                        {% else %}
+                                            {{ (backup.size / 1024)|number_format(1, ',', '.') }} KB
+                                        {% endif %}
+                                    </td>
+                                    <td class="small text-muted">
+                                        <i class="ph ph-clock me-1"></i>{{ backup.time|date('d/m/Y H:i:s') }}
+                                    </td>
+                                    <td class="text-end">
+                                        <div class="d-flex justify-content-end gap-1.5 align-items-center">
+                                            <a href="{{ path('app_backup_download', {filename: backup.name}) }}"
+                                               class="btn btn-sm btn-secondary"
+                                               title="Unduh File">
+                                                <i class="ph ph-download-simple"></i>
+                                            </a>
+                                            <form method="post" action="{{ path('app_backup_restore_run') }}" class="d-inline m-0">
+                                                <input type="hidden" name="_token" value="{{ csrf_token('app_backup_restore_run') }}">
+                                                <input type="hidden" name="filename" value="{{ backup.name }}">
+                                                <div class="dropdown d-inline-block">
+                                                    <button class="btn btn-sm btn-outline-primary dropdown-toggle d-flex align-items-center gap-1"
+                                                            type="button"
+                                                            data-bs-toggle="dropdown"
+                                                            aria-expanded="false">
+                                                        <i class="ph ph-arrows-clockwise"></i> Restore
+                                                    </button>
+                                                    <ul class="dropdown-menu dropdown-menu-end shadow p-3" style="width: 270px;">
+                                                        <li class="mb-2">
+                                                            <div class="form-check">
+                                                                <input class="form-check-input" type="checkbox" name="drop_tables" value="1" id="drop_{{ loop.index }}">
+                                                                <label class="form-check-label text-danger small fw-bold" for="drop_{{ loop.index }}">
+                                                                    Timpa Tabel (Drop &amp; Recreate)
+                                                                </label>
+                                                            </div>
+                                                            <div class="text-muted fs-xs mt-1">Centang jika ingin menghapus tabel yang ada sebelum merestore data.</div>
+                                                        </li>
+                                                        <li><hr class="dropdown-divider"></li>
+                                                        <li>
+                                                            <button type="submit"
+                                                                    class="btn btn-danger btn-sm w-100 fw-bold d-flex align-items-center justify-content-center gap-2"
+                                                                    data-confirm="PENTING: Seluruh data saat ini akan ditimpa dengan file {{ backup.name }}. Lanjutkan proses restore?">
+                                                                <i class="ph ph-arrow-counter-clockwise"></i> Eksekusi Restore
+                                                            </button>
+                                                        </li>
+                                                    </ul>
+                                                </div>
+                                            </form>
+                                            <form method="post" action="{{ path('app_backup_delete') }}" class="d-inline m-0">
+                                                <input type="hidden" name="_token" value="{{ csrf_token('app_backup_delete') }}">
+                                                <input type="hidden" name="filename" value="{{ backup.name }}">
+                                                <button type="submit"
+                                                        class="btn btn-sm btn-outline-danger"
+                                                        data-confirm="Hapus file backup {{ backup.name }} secara permanen?"
+                                                        title="Hapus">
+                                                    <i class="ph ph-trash"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="card-body">
+                    <div class="empty">
+                        <i class="ph ph-hard-drive"></i>
+                        <div class="empty-title">Belum ada arsip cadangan</div>
+                        <div class="empty-sub">Silakan klik "Buat Backup Sekarang" untuk mencadangkan database secara manual atau aktifkan auto-backup.</div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Tab 2: Otomatisasi & Cloud -->
+    <div x-show="tab === 'automation'" style="display: none;" x-transition.opacity.duration.200ms>
+        <div class="row g-4">
+            <!-- Sub-Card 1: Auto-Backup Scheduler -->
+            <div class="col-12 col-lg-6">
+                <div class="card h-100">
+                    <div class="card-header d-flex align-items-center justify-content-between">
+                        <div>
+                            <h2 class="card-title mb-0"><i class="ph ph-clock-counter-clockwise text-primary me-2"></i>Auto-Backup Lokal</h2>
+                            <p class="text-muted small mb-0">Penjadwalan pencadangan database lokal di server.</p>
+                        </div>
+                        <span class="badge {% if settings.auto_backup_enabled|default('0') == '1' %}badge-green{% else %}badge-yellow{% endif %}">
+                            {% if settings.auto_backup_enabled|default('0') == '1' %}Aktif{% else %}Nonaktif{% endif %}
+                        </span>
+                    </div>
+                    <div class="card-body p-4 d-flex flex-column justify-content-between">
+                        <form method="post" action="{{ path('app_backup_automatic_settings') }}">
+                            <input type="hidden" name="_token" value="{{ csrf_token('app_backup_automatic_settings') }}">
+                            <div class="row g-3 mb-3">
+                                <div class="col-12 col-sm-6">
+                                    <label for="auto_backup_interval" class="form-label small fw-semibold">Interval Penjadwalan</label>
+                                    <select id="auto_backup_interval" name="auto_backup_interval" class="form-select">
+                                        <option value="hourly" {% if settings.auto_backup_interval|default('daily') == 'hourly' %}selected{% endif %}>Setiap jam</option>
+                                        <option value="daily" {% if settings.auto_backup_interval|default('daily') == 'daily' %}selected{% endif %}>Setiap hari</option>
+                                        <option value="weekly" {% if settings.auto_backup_interval|default('daily') == 'weekly' %}selected{% endif %}>Setiap minggu</option>
+                                    </select>
+                                </div>
+                                <div class="col-12 col-sm-6">
+                                    <label for="auto_backup_retention" class="form-label small fw-semibold">Retensi File</label>
+                                    <div class="input-group">
+                                        <input id="auto_backup_retention" name="auto_backup_retention" type="number" min="1" max="365" inputmode="numeric" class="form-control" value="{{ settings.auto_backup_retention|default('14') }}">
+                                        <span class="input-group-text small">file</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="d-flex align-items-center justify-content-between mb-4">
+                                <div class="form-check form-switch mb-0">
+                                    <input class="form-check-input" type="checkbox" role="switch" id="autoBackupEnabled" name="auto_backup_enabled" value="1" {% if settings.auto_backup_enabled|default('0') == '1' %}checked{% endif %}>
+                                    <label class="form-check-label fw-semibold small" for="autoBackupEnabled">Aktifkan Auto-Backup</label>
+                                </div>
+                                <button type="submit" class="btn btn-primary d-flex align-items-center gap-2">
+                                    <i class="ph ph-floppy-disk"></i> Simpan Pengaturan
+                                </button>
+                            </div>
+                        </form>
+
+                        <div>
+                            <div class="alert alert-info py-2 px-3 small mb-3">
+                                <div class="fw-semibold mb-1"><i class="ph ph-terminal me-1"></i>Command Scheduler Hosting:</div>
+                                <code>php bin/console app:auto-backup</code>
+                            </div>
+                            <div class="d-flex flex-wrap justify-content-between gap-2 small text-muted">
+                                <span><i class="ph ph-calendar-check me-1"></i>Jadwal: <strong>{{ {'hourly': 'setiap jam', 'daily': 'setiap hari', 'weekly': 'setiap minggu'}[settings.auto_backup_interval|default('daily')] }}</strong></span>
+                                <span><i class="ph ph-clock me-1"></i>Terakhir: <strong>{{ settings.last_auto_backup_at|default('') ? settings.last_auto_backup_at|date('d/m/Y H:i') : 'Belum pernah' }}</strong></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sub-Card 2: Google Drive Offsite Backup -->
+            <div class="col-12 col-lg-6">
+                <div class="card h-100">
+                    <div class="card-header d-flex align-items-center justify-content-between">
+                        <div>
+                            <h2 class="card-title mb-0"><i class="ph ph-cloud text-success me-2"></i>Google Drive Offsite</h2>
+                            <p class="text-muted small mb-0">Sinkronisasi cadangan aman ke Google Drive via Apps Script.</p>
+                        </div>
+                        <span class="badge {% if settings.gdrive_backup_enabled|default('0') == '1' %}badge-green{% else %}badge-yellow{% endif %}">
+                            {% if settings.gdrive_backup_enabled|default('0') == '1' %}Aktif{% else %}Nonaktif{% endif %}
+                        </span>
+                    </div>
+                    <div class="card-body p-4 d-flex flex-column justify-content-between">
+                        <form method="post" action="{{ path('app_backup_gdrive_settings') }}" class="mb-3">
+                            <input type="hidden" name="_token" value="{{ csrf_token('app_backup_gdrive_settings') }}">
+                            <div class="mb-3">
+                                <label class="form-label small fw-semibold">URL Webhook Apps Script</label>
+                                <input type="url" name="gdrive_backup_webhook_url" class="form-control small" placeholder="https://script.google.com/macros/s/.../exec" value="{{ settings.gdrive_backup_webhook_url|default('') }}">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label small fw-semibold">Secret Key Autentikasi</label>
+                                <input type="password" name="gdrive_backup_secret" class="form-control" placeholder="{{ settings.gdrive_backup_secret|default('') ? '•••••••••••••••• (sudah tersimpan)' : 'Masukkan secret key...' }}">
+                            </div>
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div class="form-check form-switch mb-0">
+                                    <input class="form-check-input" type="checkbox" role="switch" id="gdriveEnabled" name="gdrive_backup_enabled" value="1" {% if settings.gdrive_backup_enabled|default('0') == '1' %}checked{% endif %}>
+                                    <label class="form-check-label fw-semibold small" for="gdriveEnabled">Aktifkan Sinkronisasi</label>
+                                </div>
+                                <button type="submit" class="btn btn-success d-flex align-items-center gap-2">
+                                    <i class="ph ph-floppy-disk"></i> Simpan
+                                </button>
+                            </div>
+                        </form>
+
+                        {% if backups|length > 0 %}
+                            <div class="pt-3 border-top">
+                                <form method="post" action="{{ path('app_backup_gdrive_upload') }}">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('app_backup_gdrive_upload') }}">
+                                    <button type="submit" class="btn btn-outline-success w-100 d-flex align-items-center justify-content-center gap-2" data-confirm="Upload file backup terbaru sekarang ke Google Drive?">
+                                        <i class="ph ph-cloud-arrow-up"></i> Upload Cadangan Terbaru ke Drive Sekarang
+                                    </button>
+                                </form>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab 3: Integritas Data -->
+    <div x-show="tab === 'integrity'" style="display: none;" x-transition.opacity.duration.200ms>
+        <!-- Card 1: Format Kode & Transaksi Historis -->
+        <div class="card mb-4">
+            <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+                <div>
+                    <h2 class="card-title mb-0"><i class="ph ph-identification-card text-warning me-2"></i>Format Kode Anggota &amp; Transaksi Historis</h2>
+                    <p class="text-muted small mb-0">Deteksi kode duplikat, ketidaksesuaian format prefix paket, dan riwayat transaksi beda kategori.</p>
+                </div>
+                <div>
+                    {% if anomalies|length > 0 %}
+                        <span class="badge badge-red d-flex align-items-center gap-1">
+                            <i class="ph ph-warning-circle"></i> {{ anomalies|length }} Perlu Disinkronkan
+                        </span>
+                    {% else %}
+                        <span class="badge badge-green d-flex align-items-center gap-1">
+                            <i class="ph ph-check-circle"></i> Format Kode &amp; Transaksi Bersih
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="card-body p-4">
+                {% if anomalies|length > 0 %}
+                    <div class="alert alert-warning d-flex align-items-start gap-3 mb-4">
+                        <i class="ph ph-warning fs-3 text-warning flex-shrink-0 mt-0.5"></i>
+                        <div class="flex-grow-1">
+                            <div class="fw-bold mb-1">Ditemukan {{ anomalies|length }} anggota dengan ketidaksesuaian kode atau transaksi:</div>
+                            <div class="small text-muted">
+                                Sistem mendeteksi adanya kode anggota ganda/duplikat, prefix yang tidak sesuai paket atau reseller saat ini, atau transaksi historis yang masih mengarah ke paket lain.
+                            </div>
+                        </div>
+                        <form method="post" action="{{ path('app_backup_sync_data') }}" onsubmit="return confirm('Apakah Anda yakin ingin menyelaraskan dan meng-generate ulang kode serta transaksi untuk SEMUA ({{ anomalies|length }}) anggota yang terdeteksi?');" class="flex-shrink-0">
+                            <input type="hidden" name="_token" value="{{ csrf_token('app_backup_sync_data') }}">
+                            <input type="hidden" name="target_id" value="0">
+                            <button type="submit" class="btn btn-warning text-dark fw-bold d-flex align-items-center gap-2">
+                                <i class="ph ph-lightning"></i> Sinkronkan Semua
+                            </button>
+                        </form>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Anggota</th>
+                                    <th>Paket &amp; Reseller Saat Ini</th>
+                                    <th class="text-center" style="width: 140px;">Kode Sekarang</th>
+                                    <th class="text-center" style="width: 150px;">Rekomendasi Baru</th>
+                                    <th class="text-center" style="width: 160px;">Status Anomali</th>
+                                    <th class="text-end" style="width: 110px;">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for a in anomalies %}
+                                    <tr>
+                                        <td>
+                                            <div class="fw-bold text-1">{{ a.nama_anggota }}</div>
+                                            <div class="text-muted fs-xs">ID #{{ a.id }}</div>
+                                        </td>
+                                        <td>
+                                            <div class="d-flex flex-column gap-0.5">
+                                                <div class="small fw-semibold text-truncate" title="{{ a.nama_kategori }}">
+                                                    <i class="ph ph-package text-primary me-1"></i>{{ a.nama_kategori }}
+                                                </div>
+                                                <div class="text-muted fs-xs">
+                                                    <i class="ph ph-user me-1"></i>Reseller: {{ a.nama_reseller|default('-') }}
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge badge-sub">
+                                                {{ a.kode_anggota|default('KOSONG') }}
+                                            </span>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge badge-green fw-bold">
+                                                {{ a.recommended_code }}
+                                            </span>
+                                        </td>
+                                        <td class="text-center">
+                                            <div class="d-flex flex-column gap-1 align-items-center">
+                                                {% if a.is_duplicate|default(false) %}
+                                                    <span class="badge badge-red fs-xs"><i class="ph ph-copy me-1"></i>Kode Duplikat</span>
+                                                {% endif %}
+                                                {% if a.is_code_mismatch and not a.is_duplicate|default(false) %}
+                                                    <span class="badge badge-yellow fs-xs">Prefix Beda</span>
+                                                {% endif %}
+                                                {% if a.is_trx_mismatch %}
+                                                    <span class="badge badge-red fs-xs">{{ a.jml_trx_mismatch }} Trx Beda Paket</span>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                        <td class="text-end">
+                                            <form method="post" action="{{ path('app_backup_sync_data') }}" onsubmit="return confirm('Sinkronkan kode dan {{ a.jml_trx_mismatch }} transaksi untuk anggota {{ a.nama_anggota }}?');" class="d-inline">
+                                                <input type="hidden" name="_token" value="{{ csrf_token('app_backup_sync_data') }}">
+                                                <input type="hidden" name="target_id" value="{{ a.id }}">
+                                                <button type="submit" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1" title="Perbaiki Anggota Ini">
+                                                    <i class="ph ph-arrow-counter-clockwise"></i> Perbaiki
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="empty py-4">
+                        <i class="ph ph-shield-check"></i>
+                        <div class="empty-title">Format Kode &amp; Transaksi Sangat Bersih</div>
+                        <div class="empty-sub">Seluruh kode anggota unik mengikuti format semantik reseller-paket, dan riwayat transaksi telah sinkron dengan paket masing-masing.</div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Card 2: Relasi Yatim (Orphan Records) -->
+        <div class="card">
+            <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+                <div>
+                    <h2 class="card-title mb-0"><i class="ph ph-tree-structure text-primary me-2"></i>Pemeriksaan Relasi Yatim (Orphan Records)</h2>
+                    <p class="text-muted small mb-0">Deteksi integritas relasi tabel transaksi terhadap anggota, reseller, dan paket kategori.</p>
+                </div>
+                <div>
+                    {% if orphans.count_trx_no_anggota > 0 or orphans.count_trx_no_kategori > 0 or orphans.anggota_no_relasi|length > 0 %}
+                        <span class="badge badge-red"><i class="ph ph-warning me-1"></i>Ditemukan Relasi Yatim</span>
+                    {% else %}
+                        <span class="badge badge-green"><i class="ph ph-check-circle me-1"></i>Seluruh Relasi Valid</span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="card-body p-4">
+                <div class="row g-4">
+                    <!-- Sub 1: Transaksi Tanpa Anggota -->
+                    <div class="col-12 col-lg-6">
+                        <div class="p-3 rounded-3 h-100 d-flex flex-column justify-content-between" style="background: var(--bg-sub); border: var(--border-thin);">
+                            <div>
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <h6 class="fw-bold mb-0 d-flex align-items-center gap-2">
+                                        <i class="ph ph-receipt text-secondary"></i> Transaksi Tanpa Anggota
+                                    </h6>
+                                    {% if orphans.count_trx_no_anggota > 0 %}
+                                        <span class="badge badge-red">{{ orphans.count_trx_no_anggota }}</span>
+                                    {% else %}
+                                        <span class="badge badge-green">0 (Bersih)</span>
+                                    {% endif %}
+                                </div>
+                                <p class="text-muted small mb-3">
+                                    Transaksi yang merujuk ke ID anggota yang telah dihapus atau tidak ditemukan di database.
+                                </p>
+                                {% if orphans.count_trx_no_anggota > 0 %}
+                                    <div class="table-responsive mb-3">
+                                        <table class="data-table small">
+                                            <thead>
+                                                <tr>
+                                                    <th>ID</th>
+                                                    <th>Bulan</th>
+                                                    <th>Waktu Input</th>
+                                                    <th>Nominal</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for t in orphans.trx_no_anggota %}
+                                                    <tr>
+                                                        <td>#{{ t.id }}</td>
+                                                        <td>{{ t.bulan|default('-') }}</td>
+                                                        <td>{{ t.created_at ? t.created_at|date('d/m/Y H:i') : '-' }}</td>
+                                                        <td>Rp {{ t.nominal|number_format(0, ',', '.') }}</td>
+                                                    </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            {% if orphans.count_trx_no_anggota > 0 %}
+                                <form method="post" action="{{ path('app_backup_fix_orphans') }}" onsubmit="return confirm('PERINGATAN: Apakah Anda yakin ingin MENGHAPUS PERMANEN {{ orphans.count_trx_no_anggota }} transaksi yatim ini?');" class="pt-2">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('app_backup_fix_orphans') }}">
+                                    <input type="hidden" name="type" value="delete_orphan_trx">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger w-100 d-inline-flex align-items-center justify-content-center gap-1">
+                                        <i class="ph ph-trash"></i> Bersihkan {{ orphans.count_trx_no_anggota }} Transaksi Yatim
+                                    </button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Sub 2: Transaksi Tanpa Kategori -->
+                    <div class="col-12 col-lg-6">
+                        <div class="p-3 rounded-3 h-100 d-flex flex-column justify-content-between" style="background: var(--bg-sub); border: var(--border-thin);">
+                            <div>
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <h6 class="fw-bold mb-0 d-flex align-items-center gap-2">
+                                        <i class="ph ph-package text-secondary"></i> Transaksi Tanpa Kategori Paket
+                                    </h6>
+                                    {% if orphans.count_trx_no_kategori > 0 %}
+                                        <span class="badge badge-yellow">{{ orphans.count_trx_no_kategori }}</span>
+                                    {% else %}
+                                        <span class="badge badge-green">0 (Bersih)</span>
+                                    {% endif %}
+                                </div>
+                                <p class="text-muted small mb-3">
+                                    Transaksi yang nilai kategori paketnya kosong, tetapi relasi terhadap data anggota valid.
+                                </p>
+                            </div>
+                            {% if orphans.count_trx_no_kategori > 0 %}
+                                <form method="post" action="{{ path('app_backup_fix_orphans') }}" onsubmit="return confirm('Sinkronkan {{ orphans.count_trx_no_kategori }} transaksi mengikuti paket anggota masing-masing?');" class="pt-2">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('app_backup_fix_orphans') }}">
+                                    <input type="hidden" name="type" value="sync_trx_kategori">
+                                    <button type="submit" class="btn btn-sm btn-warning text-dark w-100 d-inline-flex align-items-center justify-content-center gap-1 fw-bold">
+                                        <i class="ph ph-arrow-counter-clockwise"></i> Sinkronkan Kategori Transaksi
+                                    </button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Sub 3: Anggota Tanpa Reseller atau Paket -->
+                    {% if orphans.anggota_no_relasi|length > 0 %}
+                        <div class="col-12">
+                            <div class="p-3 rounded-3" style="background: var(--warning-soft); border: 1px solid var(--warning-border);">
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <h6 class="fw-bold text-warning-strong mb-0 d-flex align-items-center gap-2">
+                                        <i class="ph ph-user-circle-gear"></i> Anggota Tanpa Relasi Reseller / Kategori Paket
+                                    </h6>
+                                    <span class="badge badge-yellow">{{ orphans.anggota_no_relasi|length }}</span>
+                                </div>
+                                <p class="text-muted small mb-3">
+                                    Anggota aktif yang belum dihubungkan ke reseller atau kategori paket yang valid di sistem.
+                                </p>
+                                <div class="table-responsive">
+                                    <table class="data-table small">
+                                        <thead>
+                                            <tr>
+                                                <th>Nama Anggota</th>
+                                                <th>Kode</th>
+                                                <th>Reseller</th>
+                                                <th>Kategori</th>
+                                                <th class="text-end">Aksi</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for a in orphans.anggota_no_relasi %}
+                                                <tr>
+                                                    <td class="fw-bold">{{ a.nama_anggota }}</td>
+                                                    <td><code>{{ a.kode_anggota|default('-') }}</code></td>
+                                                    <td>
+                                                        {% if a.r_id is null %}
+                                                            <span class="badge badge-red">Tidak Valid</span>
+                                                        {% else %}
+                                                            <span class="badge badge-green">Valid</span>
+                                                        {% endif %}
+                                                    </td>
+                                                    <td>
+                                                        {% if a.k_id is null %}
+                                                            <span class="badge badge-red">Tidak Valid</span>
+                                                        {% else %}
+                                                            <span class="badge badge-green">Valid</span>
+                                                        {% endif %}
+                                                    </td>
+                                                    <td class="text-end">
+                                                        <a href="{{ path('app_anggota_edit', {id: a.id}) }}" class="btn btn-sm btn-secondary" target="_blank">
+                                                            <i class="ph ph-pencil me-1"></i> Lengkapi
+                                                        </a>
+                                                    </td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab 4: Area Berbahaya -->
+    <div x-show="tab === 'danger'" style="display: none;" x-transition.opacity.duration.200ms>
+        <div class="card" style="border: 1px solid var(--danger-border); background: var(--bg);">
+            <div class="card-header d-flex align-items-center justify-content-between" style="background: var(--danger-soft); border-bottom: 1px solid var(--danger-border);">
+                <div>
+                    <h2 class="card-title text-danger mb-0"><i class="ph ph-warning-octagon me-2"></i>Area Berbahaya (Danger Zone)</h2>
+                    <p class="text-muted small mb-0">Tindakan pada area ini bersifat permanen dan tidak dapat dibatalkan.</p>
+                </div>
+                <span class="badge badge-red">Sensitif</span>
+            </div>
+            <div class="card-body p-4">
+                <div class="alert alert-danger mb-4">
+                    <h6 class="fw-bold mb-1"><i class="ph ph-fill ph-warning me-2"></i>Peringatan Penting!</h6>
+                    <p class="mb-0 small">Menghapus data operasional akan mengosongkan tabel terkait untuk memulai pembukuan baru secara bersih. Data yang dihapus tidak bisa dikembalikan tanpa arsip cadangan. Pastikan telah membuat cadangan terbaru sebelum mengeksekusi.</p>
+                </div>
+
+                <!-- Bagian 1: Reset Parsial Selektif -->
+                <div class="mb-5">
+                    <h6 class="fw-bold text-1 mb-2"><i class="ph ph-list-checks me-2 text-primary"></i>1. Reset Selektif Data Aplikasi</h6>
+                    <p class="text-muted small mb-3">Pilih tabel spesifik yang ingin dikosongkan tanpa mempengaruhi tabel lainnya.</p>
+
+                    <form method="post" action="{{ path('app_backup_reset') }}">
+                        <input type="hidden" name="_token" value="{{ csrf_token('app_backup_reset') }}">
+
+                        <div class="p-3 rounded-3 mb-3" style="background: var(--bg-sub); border: var(--border-thin);">
+                            <div class="row g-3">
+                                <div class="col-12 col-md-6">
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" name="tables[]" value="transaksi" id="reset_transaksi" checked>
+                                        <label class="form-check-label fw-medium small" for="reset_transaksi">Data Transaksi (Pembayaran / Setoran)</label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" name="tables[]" value="anggota" id="reset_anggota">
+                                        <label class="form-check-label fw-medium small" for="reset_anggota">Data Anggota</label>
+                                    </div>
+                                    <div class="form-check mb-0">
+                                        <input class="form-check-input" type="checkbox" name="tables[]" value="reseller" id="reset_reseller">
+                                        <label class="form-check-label fw-medium small" for="reset_reseller">Data Reseller</label>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-md-6">
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" name="tables[]" value="kategori" id="reset_kategori">
+                                        <label class="form-check-label fw-medium small" for="reset_kategori">Data Kategori / Paket</label>
+                                    </div>
+                                    <div class="form-check mb-0">
+                                        <input class="form-check-input" type="checkbox" name="tables[]" value="export_queue" id="reset_queue">
+                                        <label class="form-check-label fw-medium small" for="reset_queue">Antrean Export PDF/CSV</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row g-3 align-items-end">
+                            <div class="col-12 col-md-6">
+                                <label for="confirmation" class="form-label small fw-semibold text-danger">Ketik "RESET_SEKARANG" untuk konfirmasi:</label>
+                                <input type="text" id="confirmation" name="confirmation" class="form-control border-danger" required autocomplete="off" placeholder="RESET_SEKARANG">
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <button type="submit" class="btn btn-danger w-100 fw-bold d-flex align-items-center justify-content-center gap-2" data-confirm="PERINGATAN: Apakah Anda yakin 100% ingin MENGHAPUS PERMANEN seluruh data pada tabel yang dipilih?">
+                                    <i class="ph ph-trash"></i> Eksekusi Reset Selektif
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <hr style="border-color: var(--danger-border); opacity: 0.4;" class="my-4">
+
+                <!-- Bagian 2: Reset Database Full -->
+                <div>
+                    <h6 class="fw-bold text-danger mb-2"><i class="ph ph-database me-2"></i>2. Reset Database Penuh (Full Reset)</h6>
+                    <p class="text-muted small mb-3">Backup otomatis dibuat sebelum seluruh data operasional dikosongkan. Akun admin pengguna dan migrasi skema database tetap dipertahankan agar Anda dapat langsung masuk.</p>
+
+                    <form method="post" action="{{ path('app_backup_reset_full') }}" data-confirm="PERINGATAN TERAKHIR: Seluruh data operasional akan dikosongkan setelah backup otomatis dibuat. Lanjutkan?">
+                        <input type="hidden" name="_token" value="{{ csrf_token('app_backup_reset_full') }}">
+                        <div class="row g-3 align-items-end">
+                            <div class="col-12 col-md-6">
+                                <label for="resetFullConfirmation" class="form-label small fw-semibold text-danger">Ketik "RESET_DATABASE_FULL" untuk konfirmasi:</label>
+                                <input type="text" id="resetFullConfirmation" name="confirmation" class="form-control border-danger" required autocomplete="off" placeholder="RESET_DATABASE_FULL">
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <button type="submit" class="btn btn-danger w-100 fw-bold d-flex align-items-center justify-content-center gap-2">
+                                    <i class="ph ph-database"></i> Reset Database Full
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+{% endblock %}

@@ -1,0 +1,231 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Tutup Buku &amp; Kunci — Zeran Parcel{% endblock %}
+
+{% block stylesheets %}
+<style>
+    .closing { max-width: 1600px; margin: 0 auto; }
+    .closing-stat { background: var(--bg-sub); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; position: relative; overflow: hidden; }
+    .closing-stat::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+    .closing-stat.s-accent::before { background: var(--accent); }
+    .closing-stat.s-success::before { background: var(--success); }
+    .closing-stat.s-danger::before { background: var(--danger, #dc3545); }
+    .closing-stat.s-info::before { background: var(--info); }
+    .closing-stat .stat-label { font-size: var(--fs-xs); font-weight: 600; color: var(--text-3); margin-bottom: 6px; }
+    .closing-stat .stat-val { font-size: clamp(1.1rem, 2vw, 1.4rem); font-weight: 700; color: var(--text); line-height: 1.2; letter-spacing: -.02em; }
+    .closing-stat .stat-val.text-success { color: var(--success); }
+    .closing-stat .stat-val.text-danger { color: var(--danger, #dc3545); }
+    .closing-table td, .closing-table th { vertical-align: middle; }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="closing">
+    <div class="page-hd fade-in">
+        <div class="page-hd-row">
+            <div>
+                <h1>Tutup Buku &amp; Kunci</h1>
+                <p>Kelola closing rekap bulanan dan penguncian periode transaksi operasional.</p>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{{ path('app_closing_csv') }}" class="btn btn-outline-success" title="Export Excel / CSV">
+                    <i class="ph ph-file-xls me-1"></i> Export CSV
+                </a>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addPeriodModal">
+                    <i class="ph ph-plus-circle me-1"></i> Tambah Periode
+                </button>
+                <a href="{{ path('app_closing_index') }}" class="btn btn-secondary" title="Refresh"><i class="ph ph-arrow-clockwise me-1"></i> Refresh</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4 fade-in stagger-1">
+        <div class="col-12 col-md-6 col-lg-3">
+            <div class="closing-stat s-accent">
+                <div class="stat-label">Total Periode</div>
+                <div class="stat-val">{{ totalPeriods|default(0) }}</div>
+            </div>
+        </div>
+        <div class="col-12 col-md-6 col-lg-3">
+            <div class="closing-stat s-success">
+                <div class="stat-label">Periode Closed</div>
+                <div class="stat-val text-success">{{ closedCount|default(0) }}</div>
+            </div>
+        </div>
+        <div class="col-12 col-md-6 col-lg-3">
+            <div class="closing-stat s-danger">
+                <div class="stat-label">Periode Locked</div>
+                <div class="stat-val text-danger">{{ lockedCount|default(0) }}</div>
+            </div>
+        </div>
+        <div class="col-12 col-md-6 col-lg-3">
+            <div class="closing-stat s-info">
+                <div class="stat-label">Periode Terbuka</div>
+                <div class="stat-val">{{ openCount|default(0) }}</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card fade-in stagger-2">
+        <div class="card-header d-flex align-items-center justify-content-between py-3">
+            <div class="fw-semibold text-1">Daftar Periode Operasional &amp; Transaksi</div>
+        </div>
+        <div class="card-body p-0">
+            {% if periods is empty %}
+                <div class="empty p-5 text-center">
+                    <i class="ph ph-calendar-x"></i>
+                    <div class="empty-title">Belum ada periode transaksi</div>
+                    <div class="empty-sub">Periode transaksi akan otomatis terdeteksi saat transaksi masuk.</div>
+                </div>
+            {% else %}
+                <div class="table-responsive">
+                    <table class="data-table closing-table">
+                        <thead>
+                            <tr>
+                                <th style="width:130px;">Periode</th>
+                                <th>Aktivitas Transaksi</th>
+                                <th class="text-center" style="width:140px;">Status Closing</th>
+                                <th>Detail Closing</th>
+                                <th class="text-center" style="width:130px;">Status Lock</th>
+                                <th>Detail Lock</th>
+                                <th class="text-center" style="width:160px;">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for p in periods %}
+                            <tr>
+                                <td>
+                                    <div class="fw-bold fs-md px-2 py-1 border rounded d-inline-block">
+                                        {{ p.periode }}
+                                    </div>
+                                </td>
+                                <td>
+                                    {% if p.total_tx > 0 %}
+                                        <div class="fw-semibold text-1">{{ p.total_tx }} transaksi</div>
+                                        <div class="fs-xs text-success fw-bold">Rp {{ p.total_nominal|number_format(0,',','.') }}</div>
+                                    {% else %}
+                                        <span class="text-muted fst-italic fs-sm">Belum ada transaksi</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    {% if p.closing_status == 'closed' %}
+                                        <span class="badge badge-green"><i class="ph ph-fill ph-check-circle me-1"></i>CLOSED</span>
+                                    {% elseif p.closing_status == 'draft' %}
+                                        <span class="badge badge-yellow"><i class="ph ph-hourglass me-1"></i>DRAFT</span>
+                                    {% else %}
+                                        <span class="badge"><i class="ph ph-folder me-1"></i>OPEN</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if p.closed_at %}
+                                        <div class="fs-xs fw-semibold text-1"><i class="ph ph-user me-1"></i>{{ p.closed_by ?: 'Sistem' }}</div>
+                                        <div class="fs-xs text-3"><i class="ph ph-clock me-1"></i>{{ p.closed_at|date('d/m/Y H:i') }}</div>
+                                    {% else %}
+                                        <span class="text-muted fs-xs">—</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    {% if p.lock_id %}
+                                        <span class="badge badge-red"><i class="ph ph-fill ph-lock me-1"></i>LOCKED</span>
+                                    {% else %}
+                                        <span class="badge"><i class="ph ph-lock-open me-1"></i>UNLOCKED</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if p.locked_at %}
+                                        <div class="fs-xs fw-semibold text-1"><i class="ph ph-user me-1"></i>{{ p.locked_by ?: 'Sistem' }}</div>
+                                        <div class="fs-xs text-3"><i class="ph ph-clock me-1"></i>{{ p.locked_at|date('d/m/Y H:i') }}</div>
+                                    {% else %}
+                                        <span class="text-muted fs-xs">—</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    <div class="d-flex gap-2 justify-content-center">
+                                        {% if p.closing_status != 'closed' %}
+                                            <form method="post" action="{{ path('app_closing_close') }}" class="d-inline" data-confirm="Yakin ingin close periode {{ p.periode }}? Transaksi di periode ini tidak bisa diedit setelah di-close.">
+                                                <input type="hidden" name="_token" value="{{ csrf_token('app_closing_close') }}">
+                                                <input type="hidden" name="periode" value="{{ p.periode }}">
+                                                <button type="submit" class="btn btn-sm btn-success" title="Close Periode">
+                                                    <i class="ph ph-check-circle me-1"></i>Close
+                                                </button>
+                                            </form>
+                                        {% else %}
+                                            <form method="post" action="{{ path('app_closing_open') }}" class="d-inline" data-confirm="Yakin ingin membuka kembali periode {{ p.periode }}? Transaksi akan bisa diedit kembali.">
+                                                <input type="hidden" name="_token" value="{{ csrf_token('app_closing_open') }}">
+                                                <input type="hidden" name="periode" value="{{ p.periode }}">
+                                                <button type="submit" class="btn btn-sm btn-outline-warning" title="Buka Closing">
+                                                    <i class="ph ph-folder-open me-1"></i>Open
+                                                </button>
+                                            </form>
+                                        {% endif %}
+
+                                        {% if not p.lock_id %}
+                                            <form method="post" action="{{ path('app_closing_lock') }}" class="d-inline" data-confirm="Yakin ingin mengunci periode {{ p.periode }}? Periode yang dikunci tidak bisa diedit sama sekali.">
+                                                <input type="hidden" name="_token" value="{{ csrf_token('app_closing_lock') }}">
+                                                <input type="hidden" name="periode" value="{{ p.periode }}">
+                                                <button type="submit" class="btn btn-sm btn-danger" title="Kunci Periode">
+                                                    <i class="ph ph-fill ph-lock me-1"></i>Lock
+                                                </button>
+                                            </form>
+                                        {% else %}
+                                            <form method="post" action="{{ path('app_closing_unlock') }}" class="d-inline" data-confirm="Yakin ingin membuka kunci periode {{ p.periode }}?">
+                                                <input type="hidden" name="_token" value="{{ csrf_token('app_closing_unlock') }}">
+                                                <input type="hidden" name="periode" value="{{ p.periode }}">
+                                                <button type="submit" class="btn btn-sm btn-outline-secondary" title="Buka Kunci">
+                                                    <i class="ph ph-lock-open me-1"></i>Unlock
+                                                </button>
+                                            </form>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card mt-4 fade-in stagger-3">
+        <div class="card-body">
+            <h6 class="fw-semibold mb-2 text-1">Panduan Status Periode</h6>
+            <div class="row g-2 text-3 small">
+                <div class="col-12 col-md-6">
+                    <div><strong>Close</strong>: Menandai rekap setoran/komisi periode tersebut telah selesai. Transaksi diproteksi dari pengeditan atau penghapusan biasa.</div>
+                    <div class="mt-1"><strong>Open</strong>: Membatalkan status close jika masih ada penyesuaian transaksi yang perlu diinput.</div>
+                </div>
+                <div class="col-12 col-md-6">
+                    <div><strong>Lock</strong>: Proteksi tingkat tinggi permanen. Transaksi di periode terkunci mutlak tidak dapat ditambah, diedit, atau dihapus oleh siapapun.</div>
+                    <div class="mt-1"><strong>Unlock</strong>: Membuka gembok periode oleh administrator sistem jika audit transaksi diperlukan.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="addPeriodModal" tabindex="-1" aria-labelledby="addPeriodModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="{{ path('app_closing_add') }}">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addPeriodModalLabel">Tambah Periode Baru</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="_token" value="{{ csrf_token('app_closing_add') }}">
+                    <div class="mb-3">
+                        <label for="periode" class="form-label">Periode (YYYY-MM)</label>
+                        <input type="month" class="form-control" id="periode" name="periode" required>
+                        <div class="form-text">Pilih bulan dan tahun untuk periode operasional baru.</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary">Tambah</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

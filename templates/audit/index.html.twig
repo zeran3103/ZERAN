@@ -1,0 +1,189 @@
+{% extends 'base.html.twig' %}
+{% block title %}Log Aktivitas — Zeran Parcel{% endblock %}
+
+{% block stylesheets %}
+<style>
+    .audit { max-width: 1600px; margin: 0 auto; }
+    .audit-filter-card { background: var(--bg-sub); border: 1px solid var(--border); border-radius: var(--radius); }
+    .audit-filter-header { padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+    .audit-filter-title { font-size: var(--fs-base); font-weight: 600; color: var(--text); }
+    .audit-filter-body { padding: 16px; }
+    .audit-stat { background: var(--bg-sub); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; position: relative; overflow: hidden; }
+    .audit-stat::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+    .audit-stat.s-accent::before { background: var(--accent); }
+    .audit-stat.s-success::before { background: var(--success); }
+    .audit-stat.s-info::before { background: var(--info); }
+    .audit-stat .stat-label { font-size: var(--fs-xs); font-weight: 600; color: var(--text-3); margin-bottom: 6px; }
+    .audit-stat .stat-val { font-size: clamp(1.1rem, 2vw, 1.4rem); font-weight: 700; color: var(--text); line-height: 1.2; letter-spacing: -.02em; }
+    .audit-stat .stat-val.text-success { color: var(--success); }
+    .audit-table td, .audit-table th { vertical-align: middle; }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="audit">
+    <div class="page-hd fade-in">
+        <div class="page-hd-row">
+            <div>
+                <h1>Log Aktivitas</h1>
+                <p>Rekam jejak aktivitas &amp; perubahan data sistem ({{ totalItems }} catatan ditemukan).</p>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{{ path('app_audit_csv', {q: q, action: action, tgl_dari: tglDari, tgl_sampai: tglSampai}) }}" class="btn btn-outline-success" title="Export CSV untuk Excel">
+                    <i class="ph ph-file-xls me-1"></i> Export CSV
+                </a>
+                <a href="{{ path('app_audit_index') }}" class="btn btn-secondary" title="Refresh"><i class="ph ph-arrow-clockwise me-1"></i> Refresh</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4 fade-in stagger-1">
+        <div class="col-12 col-md-6 col-lg-4">
+            <div class="audit-stat s-accent">
+                <div class="stat-label">Total Semua Log</div>
+                <div class="stat-val">{{ allCount|default(0)|number_format(0,',','.') }}</div>
+            </div>
+        </div>
+        <div class="col-12 col-md-6 col-lg-4">
+            <div class="audit-stat s-success">
+                <div class="stat-label">Aktivitas Hari Ini</div>
+                <div class="stat-val text-success">{{ todayCount|default(0)|number_format(0,',','.') }}</div>
+            </div>
+        </div>
+        <div class="col-12 col-lg-4">
+            <div class="audit-stat s-info">
+                <div class="stat-label">Hasil Filter</div>
+                <div class="stat-val">{{ totalItems|default(0)|number_format(0,',','.') }}</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="audit-filter-card mb-4 fade-in stagger-2">
+        <div class="audit-filter-header">
+            <div class="audit-filter-title">Filter Log</div>
+        </div>
+        <div class="audit-filter-body">
+            <form method="get" action="{{ path('app_audit_index') }}" class="row g-2 align-items-end">
+                <input type="hidden" name="filter" value="1">
+                <div class="col-12 col-sm-6 col-md-3 col-lg-2">
+                    <label class="form-label text-3 fs-xs fw-semibold mb-1">Jenis Aksi</label>
+                    <select name="action" class="form-select form-select-sm" onchange="this.form.submit()">
+                        <option value="">Semua aksi</option>
+                        {% for act in actionList %}
+                            <option value="{{ act }}" {% if action==act %}selected{% endif %}>{{ act }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-6 col-sm-3 col-md-2 col-lg-2">
+                    <label class="form-label text-3 fs-xs fw-semibold mb-1">Dari Tanggal</label>
+                    <input type="date" name="tgl_dari" value="{{ tglDari }}" class="form-control form-control-sm">
+                </div>
+                <div class="col-6 col-sm-3 col-md-2 col-lg-2">
+                    <label class="form-label text-3 fs-xs fw-semibold mb-1">Sampai</label>
+                    <input type="date" name="tgl_sampai" value="{{ tglSampai }}" class="form-control form-control-sm">
+                </div>
+                <div class="col-12 col-sm-12 col-md-5 col-lg-6">
+                    <label class="form-label text-3 fs-xs fw-semibold mb-1">Pencarian</label>
+                    <div class="input-group input-group-sm">
+                        <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Cari user / keterangan / entitas / IP...">
+                        <button type="submit" class="btn btn-primary" title="Filter"><i class="ph ph-magnifying-glass"></i></button>
+                        <a href="{{ path('app_audit_index') }}" class="btn btn-secondary" title="Reset"><i class="ph ph-arrow-counter-clockwise"></i></a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card fade-in">
+        <div class="table-responsive">
+            <table class="data-table audit-table">
+                <thead>
+                    <tr>
+                        <th class="text-center text-muted" style="width:60px;">ID</th>
+                        <th style="width:140px;">Waktu</th>
+                        <th style="width:120px;">User</th>
+                        <th style="width:140px;">Aksi</th>
+                        <th>Keterangan</th>
+                        <th style="width:160px;">Entitas</th>
+                        <th style="width:130px;" class="text-end pe-4">IP Address</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in logs %}
+                        <tr class="transition-colors hover-bg-light">
+                            <td class="text-center text-muted small">#{{ log.id }}</td>
+                            <td>
+                                <div class="fw-bold text-dark small"><i class="ph ph-calendar me-1 text-muted"></i>{{ log.createdAt|date('d/m/Y') }}</div>
+                                <div class="text-muted fs-xs"><i class="ph ph-clock me-1 opacity-50"></i>{{ log.createdAt|date('H:i:s') }}</div>
+                            </td>
+                            <td>
+                                <span class="badge">
+                                    <i class="ph ph-user-circle me-1"></i>{{ log.username ?: 'Sistem' }}
+                                </span>
+                            </td>
+                            <td>
+                                {% set badgeClass = '' %}
+                                {% if log.action == 'CREATE' or log.action == 'INSERT' %}{% set badgeClass = 'badge-green' %}
+                                {% elseif log.action == 'UPDATE' %}{% set badgeClass = 'badge-blue' %}
+                                {% elseif log.action == 'DELETE' %}{% set badgeClass = 'badge-red' %}
+                                {% elseif log.action == 'LOGIN' %}{% set badgeClass = 'badge-blue' %}
+                                {% endif %}
+                                <span class="badge {{ badgeClass }}">
+                                    {{ log.action }}
+                                </span>
+                            </td>
+                            <td class="text-muted small fw-medium">{{ log.description ?: '—' }}</td>
+                            <td class="small text-muted">
+                                {% if log.entityType %}
+                                    <span class="badge badge-sub">{{ log.entityType }}</span>
+                                    {% if log.entityId %}<span class="text-primary ms-1">#{{ log.entityId }}</span>{% endif %}
+                                {% else %}
+                                    —
+                                {% endif %}
+                            </td>
+                            <td class="small text-muted text-end pe-4">
+                                <i class="ph ph-globe me-1 opacity-50"></i>{{ log.ipAddress ?: 'localhost' }}
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="7">
+                                <div class="empty">
+                                    <i class="ph ph-inbox"></i>
+                                    <div class="empty-title">Tidak ada log</div>
+                                    <div class="empty-sub">Tidak ditemukan log aktivitas yang sesuai dengan kriteria filter.</div>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if totalPages > 1 %}
+            <div class="pager">
+                <div class="pager-text">Hal. {{ currentPage }} / {{ totalPages }} (Total {{ totalItems }} log)</div>
+                <div class="pager-links">
+                    {% if currentPage <= 1 %}
+                        <span><i class="ph ph-caret-left"></i></span>
+                    {% else %}
+                        <a href="{{ path('app_audit_index', {filter:1,q:q,action:action,tgl_dari:tglDari,tgl_sampai:tglSampai,page:currentPage-1}) }}"><i class="ph ph-caret-left"></i></a>
+                    {% endif %}
+                    {% for p in max(1,currentPage-2)..min(totalPages,currentPage+2) %}
+                        {% if p == currentPage %}
+                            <a href="{{ path('app_audit_index', {filter:1,q:q,action:action,tgl_dari:tglDari,tgl_sampai:tglSampai,page:p}) }}" class="active">{{ p }}</a>
+                        {% else %}
+                            <a href="{{ path('app_audit_index', {filter:1,q:q,action:action,tgl_dari:tglDari,tgl_sampai:tglSampai,page:p}) }}">{{ p }}</a>
+                        {% endif %}
+                    {% endfor %}
+                    {% if currentPage >= totalPages %}
+                        <span><i class="ph ph-caret-right"></i></span>
+                    {% else %}
+                        <a href="{{ path('app_audit_index', {filter:1,q:q,action:action,tgl_dari:tglDari,tgl_sampai:tglSampai,page:currentPage+1}) }}"><i class="ph ph-caret-right"></i></a>
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

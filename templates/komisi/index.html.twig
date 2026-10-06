@@ -1,0 +1,442 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Rekap Komisi Mitra — Zeran Parcel{% endblock %}
+
+{% block body %}
+<div class="page-hd commission-header fade-in">
+    <div class="page-hd-row">
+        <div>
+            <h1>Rekap Komisi Mitra</h1>
+            <p>Laporan perhitungan komisi berdasarkan total omzet transaksi per reseller.</p>
+        </div>
+        <div class="commission-header-actions d-flex gap-2">
+            <button type="button" class="btn btn-outline-secondary commission-print-btn" onclick="window.print(); return false;" aria-label="Cetak laporan komisi">
+                <i class="ph ph-printer" aria-hidden="true"></i><span>Cetak</span>
+            </button>
+            <a href="{{ path('app_laporan_komisi_csv', {tahun:tahun,bulan:bulan,rate:rate,reseller_id:resellerId,kategori_id:kategoriId,q:q,filter:1}) }}"
+               class="btn btn-success d-inline-flex align-items-center gap-1"
+               title="Export ke file Excel / CSV">
+                <i class="ph ph-file-xls"></i><span>Export CSV</span>
+            </a>
+        </div>
+    </div>
+</div>
+
+{% if resellerId > 0 and detailAnggota is not empty %}
+<div class="card mb-4 commission-detail-card fade-in" aria-label="Rincian komisi reseller">
+    <div class="card-body">
+        <div class="detail-head">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="bg-primary-subtle text-primary rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width:38px;height:38px;">
+                        {{ resellerNama|first|upper }}
+                    </div>
+                    <div>
+                        <div class="fw-bold text-1 fs-5">{{ resellerNama }}</div>
+                        <div class="text-3 small">Rincian sumber komisi · periode {{ tahun == 0 ? 'Semua Tahun' : tahun }}{{ bulan > 0 ? ' · ' ~ '%02d'|format(bulan) : '' }}</div>
+                    </div>
+                </div>
+                <div>
+                    <a href="{{ path('app_laporan_komisi', {tahun:tahun,bulan:bulan,rate:rate,reseller_id:0,filter:1}) }}" class="btn btn-sm btn-outline-secondary">
+                        <i class="ph ph-arrow-left me-1"></i>Semua Reseller
+                    </a>
+                </div>
+            </div>
+            <div class="detail-stats">
+                <div class="detail-stat">
+                    <span class="detail-stat-label"><i class="ph ph-wallet text-info"></i> Total Omzet</span>
+                    <strong class="text-info">Rp {{ grandTotalTransaksi|number_format(0,',','.') }}</strong>
+                </div>
+                <div class="detail-stat">
+                    <span class="detail-stat-label"><i class="ph ph-currency-dollar text-success"></i> Komisi Diterima ({{ rate }}%)</span>
+                    <strong class="text-success">Rp {{ grandTotalKomisi|number_format(0,',','.') }}</strong>
+                </div>
+                <div class="detail-stat">
+                    <span class="detail-stat-label"><i class="ph ph-identification text-primary"></i> Anggota menyumbang</span>
+                    <strong class="text-primary">{{ detailAnggota|length }} orang</strong>
+                </div>
+                <div class="detail-stat">
+                    <span class="detail-stat-label"><i class="ph ph-tags text-warning"></i> Kategori terlibat</span>
+                    <strong class="text-warning-emphasis">{{ detailKategori|length }} kategori</strong>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4 mt-1">
+            <div class="col-lg-7">
+                <h6 class="fw-bold text-1 mb-2"><i class="ph ph-users me-2"></i>Komisi dari Tiap Anggota</h6>
+                <div class="table-responsive">
+                    <table class="detail-table">
+                        <thead>
+                            <tr class="text-3 small">
+                                <th style="width:40px;">#</th>
+                                <th>Anggota</th>
+                                <th class="text-center" style="width:80px;">Transaksi</th>
+                                <th class="text-end" style="width:140px;">Omzet</th>
+                                <th class="text-end" style="width:140px;">Komisi {{ rate }}%</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for a in detailAnggota %}
+                            <tr>
+                                <td class="text-muted small">{{ loop.index }}</td>
+                                <td>
+                                    <div class="fw-semibold">{{ a.namaAnggota }}</div>
+                                    <div class="text-3 fs-xs">{{ a.kodeAnggota }}</div>
+                                </td>
+                                <td class="text-center small text-muted">{{ a.jmlTransaksi }}</td>
+                                <td class="text-end font-monospace small">Rp {{ a.omzet|number_format(0,',','.') }}</td>
+                                <td class="text-end commission-value-cell"><span class="commission-value font-monospace">Rp {{ a.komisi|number_format(0,',','.') }}</span></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="col-lg-5">
+                <h6 class="fw-bold text-1 mb-2"><i class="ph ph-tags me-2"></i>Komisi dari Tiap Kategori</h6>
+                <div class="table-responsive">
+                    <table class="detail-table">
+                        <thead>
+                            <tr class="text-3 small">
+                                <th style="width:40px;">#</th>
+                                <th>Kategori</th>
+                                <th class="text-center" style="width:80px;">Anggota</th>
+                                <th class="text-end" style="width:140px;">Omzet</th>
+                                <th class="text-end" style="width:140px;">Komisi {{ rate }}%</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for k in detailKategori %}
+                            <tr>
+                                <td class="text-muted small">{{ loop.index }}</td>
+                                <td class="fw-semibold">{{ k.namaKategori }}</td>
+                                <td class="text-center small text-muted">{{ k.jmlAnggota }}</td>
+                                <td class="text-end font-monospace small">Rp {{ k.omzet|number_format(0,',','.') }}</td>
+                                <td class="text-end commission-value-cell"><span class="commission-value font-monospace">Rp {{ k.komisi|number_format(0,',','.') }}</span></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot>
+                            <tr class="fw-bold">
+                                <td colspan="4" class="text-end text-uppercase small text-3">Total</td>
+                                <td class="text-end font-monospace">Rp {{ grandTotalKomisi|number_format(0,',','.') }}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="kpi-strip mb-4 fade-in" aria-label="Ringkasan komisi">
+    <div>
+        <span class="kpi-label"><i class="ph ph-users text-primary"></i> Total Reseller <small>(tampil)</small></span>
+        <strong class="text-primary">{{ data|length }}</strong>
+    </div>
+    <div>
+        <span class="kpi-label"><i class="ph ph-wallet text-info"></i> Total Omzet Setoran <small>(periode {{ tahun == 0 ? 'Semua Tahun' : tahun }}{{ bulan > 0 ? '/' ~ '%02d'|format(bulan) : '' }})</small></span>
+        <strong class="text-info">Rp {{ grandTotalTransaksi|number_format(0,',','.') }}</strong>
+    </div>
+    <div>
+        <span class="kpi-label"><i class="ph ph-currency-dollar text-success"></i> Estimasi Total Komisi <small>({{ rate }}%)</small></span>
+        <strong class="text-success">Rp {{ grandTotalKomisi|number_format(0,',','.') }}</strong>
+    </div>
+</div>
+{% endif %}
+
+<div class="card mb-4 commission-filter-card fade-in overflow-hidden">
+    <div class="filter-row">
+        <form method="get" action="{{ path('app_laporan_komisi') }}" id="filterForm" class="w-100">
+            <input type="hidden" name="filter" value="1">
+            <div class="row g-2 align-items-end">
+                <div class="col-6 col-sm-3 col-md-2 col-lg-1">
+                    <label class="form-label text-muted fw-medium small mb-1">Tahun</label>
+                    <select name="tahun" id="tahunSelect" class="form-select form-select-sm">
+                        <option value="0" {% if tahun==0 %}selected{% endif %}>Semua</option>
+                        {% for y in yearsList %}<option value="{{ y }}" {% if tahun==y %}selected{% endif %}>{{ y }}</option>{% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-6 col-sm-3 col-md-2 col-lg-2">
+                    <label class="form-label text-muted fw-medium small mb-1">Bulan</label>
+                    <select name="bulan" id="bulanSelect" class="form-select form-select-sm">
+                        <option value="0" {% if bulan==0 %}selected{% endif %}>Semua</option>
+                        {% for mKey,mName in monthsList %}<option value="{{ mKey }}" {% if bulan == mKey %}selected{% endif %}>{{ mName }}</option>{% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-12 col-sm-6 col-md-3 col-lg-2">
+                    <label class="form-label text-muted fw-medium small mb-1">Reseller</label>
+                    <select name="reseller_id" id="resellerSelect" class="form-select form-select-sm">
+                        <option value="0">Semua</option>
+                        {% for r in resellers %}<option value="{{ r.id }}" {% if resellerId==r.id %}selected{% endif %}>{{ r.namaReseller }}</option>{% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-12 col-sm-6 col-md-3 col-lg-2">
+                    <label class="form-label text-muted fw-medium small mb-1">
+                        Kategori
+                        <span id="katLoad" class="d-none fs-xs text-3">loading…</span>
+                    </label>
+                    <select name="kategori_id" id="kategoriSelect" class="form-select form-select-sm">
+                        <option value="0">Semua{% if resellerId>0 %} (reseller ini){% endif %}</option>
+                        {% for k in kategoris %}<option value="{{ k.id }}" {% if kategoriId==k.id %}selected{% endif %}>{{ k.nama_kategori }}{% if k.count_anggota is defined and k.count_anggota>0 %} ({{ k.count_anggota }}){% endif %}</option>{% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-6 col-sm-4 col-md-2 col-lg-2">
+                    <label class="form-label text-muted fw-medium small mb-1">Rate Komisi</label>
+                    <div class="input-group input-group-sm">
+                        <input type="number" step="0.1" min="0" max="100" inputmode="decimal" name="rate" id="rateInput" class="form-control text-center font-monospace fw-bold" value="{{ rate }}">
+                        <span class="input-group-text">%</span>
+                    </div>
+                </div>
+
+                <div class="col-12 col-sm-8 col-md-4 col-lg-3">
+                    <label class="form-label text-muted fw-medium small mb-1">Cari reseller</label>
+                    <div class="input-group input-group-sm">
+                        <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Nama atau kode…">
+                        <button type="submit" class="btn btn-primary" title="Cari">
+                            <i class="ph ph-magnifying-glass"></i>
+                        </button>
+                        <a href="{{ path('app_laporan_komisi') }}" class="btn btn-secondary" title="Reset">
+                            <i class="ph ph-x"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if data|length > 0 %}
+<div class="card mb-4 fade-in chart-card">
+    <div class="card-body">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+            <h6 class="mb-0 fw-bold text-1"><i class="ph ph-chart-bar me-2"></i>Peringkat Omzet per Reseller</h6>
+            <span class="badge badge-blue">Komisi {{ rate }}% muncul di tooltip</span>
+        </div>
+        <div style="position:relative; height:{{ (data|length * 36 + 40) > 240 ? (data|length * 36 + 40) : 240 }}px;">
+            <canvas id="komisiChart" aria-label="Grafik peringkat omzet per reseller" role="img"></canvas>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="card fade-in">
+    {% if data|length > 0 %}
+    <div class="table-responsive">
+        <table class="data-table commission-table">
+            <caption class="visually-hidden">Daftar komisi reseller</caption>
+            <thead>
+                <tr>
+                    <th class="text-center" style="width:50px;">#</th>
+                    <th>Nama Reseller</th>
+                    <th class="text-end" style="width:130px;">Share Omzet</th>
+                    <th class="text-end" style="width:230px;">Total Omzet / Setoran</th>
+                    <th class="text-end text-2" style="width:230px">Komisi Diterima ({{ rate }}%)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in data %}
+                {% set share = grandTotalTransaksi > 0 ? (item.totalTransaksi / grandTotalTransaksi * 100) : 0 %}
+                <tr class="transition-colors hover-bg-light">
+                    <td class="text-center text-muted small">{{ loop.index }}</td>
+                    <td class="fw-bold text-dark">
+                        <a href="{{ path('app_laporan_komisi', {tahun:tahun,bulan:bulan,rate:rate,reseller_id:item.resellerId,filter:1}) }}" class="d-flex align-items-center gap-2 text-decoration-none text-dark hover-primary" title="Lihat rincian komisi {{ item.namaReseller }}">
+                            <div class="avatar-sm rounded-circle d-flex align-items-center justify-content-center text-primary fw-bold" style="width:32px;height:32px">
+                                {{ item.namaReseller|first|upper }}
+                            </div>
+                            <span>{{ item.namaReseller }}</span>
+                            <i class="ph ph-caret-right text-muted small opacity-50 ms-auto"></i>
+                        </a>
+                    </td>
+                    <td class="text-end">
+                        <div class="d-flex align-items-center justify-content-end gap-2">
+                            <div class="share-track" aria-hidden="true"><div class="share-bar" style="width:{{ share > 100 ? 100 : share }}%"></div></div>
+                            <span class="font-monospace small fw-semibold text-2">{{ share|number_format(1,',','.') }}%</span>
+                        </div>
+                    </td>
+                    <td class="text-end font-monospace text-muted fw-medium">Rp {{ item.totalTransaksi|number_format(0,',','.') }}</td>
+                    <td class="text-end commission-value-cell">
+                        <span class="commission-value font-monospace">Rp {{ item.totalKomisi|number_format(0,',','.') }}</span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr class="fw-bold text-dark">
+                    <td colspan="2" class="text-end py-3 px-4 text-uppercase"><i class="ph ph-calculator me-2"></i>GRAND TOTAL</td>
+                    <td class="text-end py-3 px-4 font-monospace">100%</td>
+                    <td class="text-end py-3 px-4 font-monospace fs-5">Rp {{ grandTotalTransaksi|number_format(0,',','.') }}</td>
+                    <td class="text-end py-3 px-4 font-monospace fs-5 text-success">Rp {{ grandTotalKomisi|number_format(0,',','.') }}</td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+    {% else %}
+    <div class="card-body">
+        <div class="empty">
+            <i class="ph {{ hasFilter ? 'ph-calculator' : 'ph-funnel' }}"></i>
+            <div class="empty-title">{{ hasFilter ? 'Belum ada data komisi' : 'Data belum ditampilkan' }}</div>
+            <div class="empty-sub">{{ hasFilter ? 'Tidak ditemukan transaksi pada periode tersebut.' : 'Pilih periode dan tekan Terapkan untuk menampilkan data komisi.' }}</div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.commission-header p { max-width: 620px; }
+.commission-header-actions { display: flex; align-items: center; }
+.commission-print-btn { padding: 8px 12px; }
+.commission-table { min-width: 900px; }
+.commission-value-cell { background: rgba(var(--bs-success-rgb), 0.08); border-left: 1px solid rgba(var(--bs-success-rgb), 0.25); }
+.commission-value { display: inline-block; min-width: 118px; padding: 6px 10px; border-radius: var(--radius-pill); background: var(--success-soft); border: 1px solid var(--success-border); color: var(--success-text); font-size: 12px; font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; }
+.share-track { width: 64px; height: 6px; border-radius: var(--radius-pill); background: rgba(var(--bs-primary-rgb), 0.15); overflow: hidden; }
+.share-bar { height: 100%; border-radius: var(--radius-pill); background: rgba(var(--bs-primary-rgb), 0.75); }
+.commission-detail-card { border-top: 3px solid var(--bs-primary) !important; }
+.detail-stats { display: flex; flex-wrap: wrap; gap: 10px; }
+.detail-stat { flex: 1 1 180px; padding: 10px 14px; border: 1px solid var(--bs-border-color); border-radius: var(--radius-md, 10px); background: var(--bs-body-bg); display: flex; flex-direction: column; gap: 2px; }
+.detail-stat-label { font-size: 11.5px; text-transform: uppercase; letter-spacing: .03em; color: var(--bs-secondary-color); font-weight: 600; }
+.detail-stat strong { font-size: 17px; font-variant-numeric: tabular-nums; }
+.detail-table thead th { border-bottom-width: 1px; font-weight: 600; text-transform: uppercase; font-size: 11px; letter-spacing: .03em; }
+.detail-table tbody tr:last-child td { border-bottom: 0; }
+@media (max-width: 575px) { .commission-header-actions { width: 100%; } .commission-print-btn { width: 100%; } .detail-stats { flex-direction: column; } }
+
+@media print {
+    nav, .app-sidebar, .app-topbar, .commission-header-actions, .commission-filter-card, .chart-card, .alert, footer, .d-print-none {
+        display: none !important;
+    }
+    body {
+        background: #fff !important;
+        color: #000 !important;
+        font-size: 10pt !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    .app-main, .page-body, .container-fluid {
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+    .card {
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+    }
+    .table-responsive {
+        max-height: none !important;
+        overflow: visible !important;
+    }
+    .commission-table, .detail-table {
+        min-width: 100% !important;
+        width: 100% !important;
+        font-size: 9pt !important;
+        border-collapse: collapse !important;
+    }
+    th, td {
+        border: 1px solid #ccc !important;
+        padding: 4px 6px !important;
+    }
+    .share-track {
+        display: none !important;
+    }
+}
+</style>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const form = document.getElementById('filterForm');
+    const resellerSel = document.getElementById('resellerSelect');
+    const kategoriSel = document.getElementById('kategoriSelect');
+    const katLoad = document.getElementById('katLoad');
+
+    ['tahunSelect','bulanSelect','kategoriSelect','rateInput'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('change', () => form.submit());
+    });
+
+    resellerSel?.addEventListener('change', function () {
+        const rid = this.value;
+        if (!rid || rid === '0') { kategoriSel.innerHTML = '<option value="0">Semua</option>'; form.submit(); return; }
+        if (katLoad) katLoad.classList.remove('d-none');
+        kategoriSel.disabled = true;
+        fetch('{{ path("app_kolektif_kategori_by_reseller") }}?reseller_id=' + encodeURIComponent(rid))
+            .then(r => r.json())
+            .then(data => {
+                kategoriSel.innerHTML = '<option value="0">Semua (reseller ini)</option>';
+                data.forEach(item => {
+                    const o = document.createElement('option');
+                    o.value = item.id;
+                    o.textContent = item.nama_kategori + (item.count_anggota > 0 ? ` (${item.count_anggota})` : '');
+                    kategoriSel.appendChild(o);
+                });
+            })
+            .catch(() => {})
+            .finally(() => { if (katLoad) katLoad.classList.add('d-none'); kategoriSel.disabled = false; form.submit(); });
+    });
+
+    const canvas = document.getElementById('komisiChart');
+    if (canvas && typeof Chart !== 'undefined') {
+        const cs = getComputedStyle(document.documentElement);
+        const accent = cs.getPropertyValue('--accent').trim() || '#d4722e';
+        const text = cs.getPropertyValue('--text-3').trim() || '#b0a394';
+        const grid = cs.getPropertyValue('--border').trim() || '#2a6b58';
+
+        const names = [{% for item in data %}'{{ item.namaReseller|escape('js') }}'{% if not loop.last %},{% endif %}{% endfor %}];
+        const omzet = [{% for item in data %}{{ (item.totalTransaksi ?: 0)|number_format(0,'.','') }}{% if not loop.last %},{% endif %}{% endfor %}];
+        const komisi = [{% for item in data %}{{ (item.totalKomisi ?: 0)|number_format(0,'.','') }}{% if not loop.last %},{% endif %}{% endfor %}];
+        const rateLabel = {{ rate|json_encode|raw }};
+        const fmt = n => 'Rp ' + new Intl.NumberFormat('id-ID').format(Math.round(n));
+
+        new Chart(canvas, {
+            type: 'bar',
+            data: {
+                labels: names,
+                datasets: [{
+                    label: 'Omzet',
+                    data: omzet,
+                    backgroundColor: accent + 'b3',
+                    borderColor: accent,
+                    borderWidth: 1,
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: ctx => {
+                                const i = ctx.dataIndex;
+                                return [fmt(omzet[i]), 'Komisi ' + rateLabel + '%: ' + fmt(komisi[i])];
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: {
+                            color: text,
+                            callback: v => v >= 1000000 ? (v/1000000) + ' jt' : new Intl.NumberFormat('id-ID').format(v)
+                        },
+                        grid: { color: grid }
+                    },
+                    y: {
+                        ticks: { color: text },
+                        grid: { color: grid }
+                    }
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

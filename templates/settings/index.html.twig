@@ -1,0 +1,169 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Konfigurasi Sistem — Zeran Parcel{% endblock %}
+
+{% block stylesheets %}
+<style>
+    .settings { max-width: 1600px; margin: 0 auto; }
+    .settings-stat { background: var(--bg-sub); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; position: relative; overflow: hidden; }
+    .settings-stat::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+    .settings-stat.s-accent::before { background: var(--accent); }
+    .settings-stat.s-success::before { background: var(--success); }
+    .settings-stat.s-info::before { background: var(--info); }
+    .settings-stat .stat-label { font-size: var(--fs-xs); font-weight: 600; color: var(--text-3); margin-bottom: 6px; }
+    .settings-stat .stat-val { font-size: clamp(1.1rem, 2vw, 1.4rem); font-weight: 700; color: var(--text); line-height: 1.2; letter-spacing: -.02em; }
+    .theme-select-card { transition: all .2s ease; }
+    .theme-select-card:hover { background: var(--bg-hover); }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="settings">
+    <div class="page-hd fade-in">
+        <div class="page-hd-row">
+            <div>
+                <h1>Konfigurasi Sistem</h1>
+                <p>Konfigurasi nama usaha/perusahaan, alamat email notifikasi, dan preferensi tampilan.</p>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{{ path('app_settings') }}" class="btn btn-secondary">
+                    <i class="ph ph-arrow-clockwise me-1"></i> Refresh
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4 fade-in">
+        <div class="col-12 col-md-4">
+            <div class="settings-stat s-accent h-100">
+                <div class="stat-label">Nama Usaha</div>
+                <div class="stat-val text-truncate" title="{{ settings.company_name|default('Zeran Parcel') }}">
+                    {{ settings.company_name|default('') ? settings.company_name : 'Zeran Parcel' }}
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-md-4">
+            <div class="settings-stat s-success h-100">
+                <div class="stat-label">Email Notifikasi</div>
+                <div class="stat-val text-truncate" title="{{ settings.notification_email|default('Belum diatur') }}">
+                    {{ settings.notification_email|default('') ? settings.notification_email : 'Belum diatur' }}
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-md-4">
+            <div class="settings-stat s-info h-100">
+                <div class="stat-label">Tema Aktif</div>
+                <div class="stat-val">
+                    {{ settings.theme|default('light') == 'dark' ? 'Dark Mode' : 'Light Mode' }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row justify-content-center fade-in">
+        <div class="col-12 col-lg-8">
+            <div class="card">
+                <div class="card-header pt-4 pb-3 border-bottom d-flex align-items-center justify-content-between">
+                    <h5 class="fw-bold mb-0 text-1">Preferensi Umum</h5>
+                    <span class="badge bg-secondary-subtle text-secondary small">Umum &amp; Tampilan</span>
+                </div>
+                <div class="card-body p-4">
+                    <form method="post" action="{{ path('app_settings') }}" id="settingsForm">
+                        <input type="hidden" name="_token" value="{{ csrf_token('app_settings') }}">
+
+                        <div class="row mb-4">
+                            <label for="company_name" class="col-sm-4 col-form-label fw-bold text-muted small">Nama Perusahaan / Brand</label>
+                            <div class="col-sm-8">
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="ph ph-buildings"></i></span>
+                                    <input type="text" class="form-control" id="company_name" name="company_name" maxlength="150" value="{{ settings.company_name|default('') }}" placeholder="Cth: Zeran Parcel Group">
+                                </div>
+                                <div class="form-text small">Nama ini digunakan pada kop laporan, cetak kwitansi, dan dokumen PDF.</div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-4">
+                            <label for="notification_email" class="col-sm-4 col-form-label fw-bold text-muted small">Email Notifikasi Sistem</label>
+                            <div class="col-sm-8">
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="ph ph-envelope"></i></span>
+                                    <input type="email" class="form-control" id="notification_email" name="notification_email" value="{{ settings.notification_email|default('') }}" placeholder="admin@domain.com">
+                                </div>
+                                <div class="form-text small">Email penerima laporan kendala sistem atau notifikasi pencadangan.</div>
+                            </div>
+                        </div>
+
+                        <hr class="text-muted opacity-25 my-4">
+
+                        <div class="row mb-4">
+                            <label class="col-sm-4 col-form-label fw-bold text-muted small">Tema Tampilan</label>
+                            <div class="col-sm-8">
+                                <div class="d-flex gap-3">
+                                    <label class="card border cursor-pointer theme-select-card w-100 p-3 text-center {% if settings.theme|default('light') == 'light' %}border-primary bg-primary bg-opacity-10{% else %}hover-bg-surface{% endif %}">
+                                        <input type="radio" name="theme" value="light" class="d-none" {% if settings.theme|default('light') == 'light' %}checked{% endif %} onchange="updateThemeSelection(this)">
+                                        <i class="ph ph-sun display-6 text-warning mb-2 d-block"></i>
+                                        <span class="fw-bold d-block">Light Mode</span>
+                                        <span class="text-muted fs-xs">Tampilan bersih cerah</span>
+                                    </label>
+
+                                    <label class="card border cursor-pointer theme-select-card w-100 p-3 text-center {% if settings.theme|default('light') == 'dark' %}border-primary bg-primary bg-opacity-10{% else %}hover-bg-surface{% endif %}">
+                                        <input type="radio" name="theme" value="dark" class="d-none" {% if settings.theme|default('light') == 'dark' %}checked{% endif %} onchange="updateThemeSelection(this)">
+                                        <i class="ph ph-moon-stars display-6 text-dark mb-2 d-block"></i>
+                                        <span class="fw-bold d-block">Dark Mode</span>
+                                        <span class="text-muted fs-xs">Tampilan gelap kontras</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2 mt-4 pt-4 border-top">
+                            <button type="submit" class="btn btn-primary px-4 py-2 d-flex align-items-center gap-2" id="saveBtn">
+                                <i class="ph ph-floppy-disk"></i> <span id="saveBtnText">Simpan Pengaturan</span>
+                                <div class="spinner-border spinner-border-sm d-none" id="saveSpinner" role="status"></div>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function() {
+    const savedServerTheme = '{{ settings.theme|default("light") }}';
+    localStorage.setItem('theme', savedServerTheme);
+    document.documentElement.classList.toggle('dark', savedServerTheme === 'dark');
+})();
+
+function updateThemeSelection(radio) {
+    document.querySelectorAll('.theme-select-card').forEach(card => {
+        card.classList.remove('border-primary', 'bg-primary', 'bg-opacity-10');
+        card.classList.add('hover-bg-surface');
+    });
+    if (radio.checked) {
+        radio.closest('.theme-select-card').classList.add('border-primary', 'bg-primary', 'bg-opacity-10');
+        radio.closest('.theme-select-card').classList.remove('hover-bg-surface');
+        localStorage.setItem('theme', radio.value);
+        document.documentElement.classList.toggle('dark', radio.value === 'dark');
+        if (window.Alpine && Alpine.store('theme')) {
+            Alpine.store('theme').dark = (radio.value === 'dark');
+        }
+    }
+}
+
+document.getElementById('settingsForm').addEventListener('submit', function() {
+    const btn = document.getElementById('saveBtn');
+    const txt = document.getElementById('saveBtnText');
+    const spin = document.getElementById('saveSpinner');
+
+    const selectedTheme = document.querySelector('input[name="theme"]:checked')?.value || 'light';
+    localStorage.setItem('theme', selectedTheme);
+    document.documentElement.classList.toggle('dark', selectedTheme === 'dark');
+
+    btn.disabled = true;
+    txt.textContent = 'Menyimpan...';
+    spin.classList.remove('d-none');
+});
+</script>
+{% endblock %}

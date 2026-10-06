@@ -1,0 +1,268 @@
+{% extends 'base.html.twig' %}
+{% block title %}Master Anggota — Zeran Parcel{% endblock %}
+
+{% block stylesheets %}
+<style>
+    .anggota { max-width: 1600px; margin: 0 auto; }
+    .anggota-filter-card { background: var(--bg-sub); border: 1px solid var(--border); border-radius: var(--radius); }
+    .anggota-filter-header { padding: 12px 16px; border-bottom: 1px solid var(--border); }
+    .anggota-filter-title { font-size: var(--fs-base); font-weight: 600; color: var(--text); }
+    .anggota-filter-body { padding: 16px; }
+    .anggota-stat { background: var(--bg-sub); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; position: relative; overflow: hidden; }
+    .anggota-stat::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+    .anggota-stat.s-accent::before { background: var(--accent); }
+    .anggota-stat.s-success::before { background: var(--success); }
+    .anggota-stat .stat-label { font-size: var(--fs-xs); font-weight: 600; color: var(--text-3); margin-bottom: 6px; }
+    .anggota-stat .stat-val { font-size: clamp(1.1rem, 2vw, 1.4rem); font-weight: 700; color: var(--text); line-height: 1.2; letter-spacing: -.02em; }
+    .anggota-table td, .anggota-table th { vertical-align: middle; }
+    .anggota-table .anggota-name { font-weight: 600; color: var(--text); }
+    .anggota-table .anggota-code { font-size: var(--fs-xs); color: var(--text-3); }
+    .anggota-table .progress-cell { min-width: 180px; }
+    .anggota-table .progress-bar-custom { height: 6px; background: var(--bg-hover); border-radius: var(--radius-pill); overflow: hidden; margin: 4px 0; }
+    .anggota-table .progress-bar-custom > span { display: block; height: 100%; border-radius: inherit; transition: width .3s ease; }
+    .anggota-table .progress-pct { font-weight: 700; font-size: var(--fs-xs); }
+    .anggota-table .progress-amounts { font-size: var(--fs-xs); color: var(--text-3); }
+    .anggota-table .progress-amounts .paid { font-weight: 600; color: var(--text); }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="anggota">
+    <div class="page-hd">
+        <div class="page-hd-row">
+            <div>
+                <h1>Master Anggota</h1>
+                <p>Daftar anggota arisan & tabungan.</p>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{{ path('app_anggota_new') }}" class="btn btn-primary">
+                    <i class="ph ph-plus-circle me-1"></i> Tambah Anggota
+                </a>
+                <a href="{{ path('app_anggota_import') }}" class="btn btn-outline-primary" title="Import Anggota CSV">
+                    <i class="ph ph-file-arrow-up me-1"></i> Import CSV
+                </a>
+                <a href="{{ path('app_anggota_csv', {q:q,reseller_id:resellerId,kategori_id:kategoriId,status:status,sort:sort,dir:dir}) }}" class="btn btn-outline-success" title="Export Excel / CSV">
+                    <i class="ph ph-file-xls me-1"></i> Export CSV
+                </a>
+                <a href="{{ path('app_anggota_index') }}" class="btn btn-secondary" title="Refresh">
+                    <i class="ph ph-arrow-clockwise me-1"></i> Refresh
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-3">
+        <div class="col-12 col-md-6">
+            <div class="anggota-stat s-accent">
+                <div class="stat-label">Total Anggota (Filter)</div>
+                <div class="stat-val">{{ totalItems|default(0) }}</div>
+            </div>
+        </div>
+        <div class="col-12 col-md-6">
+            <div class="anggota-stat s-success">
+                <div class="stat-label">Halaman Saat Ini</div>
+                <div class="stat-val">Hal. {{ currentPage|default(1) }}</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="anggota-filter-card mb-3">
+        <div class="anggota-filter-header">
+            <div class="anggota-filter-title">Filter Anggota</div>
+        </div>
+        <div class="anggota-filter-body">
+            <form method="get" action="{{ path('app_anggota_index') }}" class="row g-2 align-items-end">
+                <input type="hidden" name="filter" value="1">
+                <div class="col-12 col-sm-6 col-md-3">
+                    <label class="form-label text-3 fs-xs fw-semibold mb-1">Reseller</label>
+                    <select name="reseller_id" class="form-select form-select-sm" onchange="this.form.submit()">
+                        <option value="0">Semua Reseller</option>
+                        {% for r in resellers %}<option value="{{ r.id }}" {% if resellerId==r.id %}selected{% endif %}>{{ r.namaReseller }}</option>{% endfor %}
+                    </select>
+                </div>
+                <div class="col-12 col-sm-6 col-md-3">
+                    <label class="form-label text-3 fs-xs fw-semibold mb-1">Kategori / Paket</label>
+                    <select name="kategori_id" class="form-select form-select-sm" onchange="this.form.submit()">
+                        <option value="0">Semua Kategori</option>
+                        {% for k in kategoris %}<option value="{{ k.id }}" {% if kategoriId==k.id %}selected{% endif %}>{{ k.nama_kategori ?: k.namaKategori }}{% if k.count_anggota is defined and k.count_anggota>0 %} ({{ k.count_anggota }}){% endif %}</option>{% endfor %}
+                    </select>
+                </div>
+                <div class="col-6 col-sm-4 col-md-2">
+                    <label class="form-label text-3 fs-xs fw-semibold mb-1">Status</label>
+                    <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
+                        <option value="all" {% if status=='all' or status is empty %}selected{% endif %}>Semua Status</option>
+                        <option value="1" {% if status=='1' %}selected{% endif %}>Aktif</option>
+                        <option value="0" {% if status=='0' %}selected{% endif %}>Nonaktif</option>
+                    </select>
+                </div>
+                <div class="col-12 col-sm-8 col-md-4">
+                    <label class="form-label text-3 fs-xs fw-semibold mb-1">Cari nama / kode</label>
+                    <div class="input-group input-group-sm">
+                        <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Ketik nama atau kode...">
+                        <button type="submit" class="btn btn-primary" title="Cari">
+                            <i class="ph ph-magnifying-glass"></i>
+                        </button>
+                        <a href="{{ path('app_anggota_index') }}" class="btn btn-secondary" title="Reset Filter">
+                            <i class="ph ph-arrow-counter-clockwise"></i>
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="table-responsive">
+            <table class="data-table table-hover align-middle anggota-table">
+                <thead>
+                    <tr>
+                        <th class="table-checkbox"><input type="checkbox" class="form-check-input" id="selectAll" aria-label="Pilih semua anggota"></th>
+                        <th style="width:75px;">
+                            <a href="{{ path('app_anggota_index', {filter:1,q:q,reseller_id:resellerId,kategori_id:kategoriId,status:status,sort:'id',dir:(sort=='id' and dir=='ASC' ? 'desc' : 'asc')}) }}" class="text-reset text-decoration-none d-inline-flex align-items-center gap-1">
+                                <span>ID</span>
+                                <i class="ph {% if sort=='id' %}{{ dir=='ASC' ? 'ph-sort-descending text-primary' : 'ph-sort-ascending text-primary' }}{% else %}ph-arrows-split opacity-25{% endif %} fs-xs"></i>
+                            </a>
+                        </th>
+                        <th>
+                            <a href="{{ path('app_anggota_index', {filter:1,q:q,reseller_id:resellerId,kategori_id:kategoriId,status:status,sort:'nama',dir:(sort=='nama' and dir=='ASC' ? 'desc' : 'asc')}) }}" class="text-reset text-decoration-none d-inline-flex align-items-center gap-1">
+                                <span>Info Anggota</span>
+                                <i class="ph {% if sort=='nama' %}{{ dir=='ASC' ? 'ph-sort-descending text-primary' : 'ph-sort-ascending text-primary' }}{% else %}ph-arrows-split opacity-25{% endif %} fs-xs"></i>
+                            </a>
+                        </th>
+                        <th>
+                            <a href="{{ path('app_anggota_index', {filter:1,q:q,reseller_id:resellerId,kategori_id:kategoriId,status:status,sort:'reseller',dir:(sort=='reseller' and dir=='ASC' ? 'desc' : 'asc')}) }}" class="text-reset text-decoration-none d-inline-flex align-items-center gap-1">
+                                <span>Reseller</span>
+                                <i class="ph {% if sort=='reseller' %}{{ dir=='ASC' ? 'ph-sort-descending text-primary' : 'ph-sort-ascending text-primary' }}{% else %}ph-arrows-split opacity-25{% endif %} fs-xs"></i>
+                            </a>
+                        </th>
+                        <th>
+                            <a href="{{ path('app_anggota_index', {filter:1,q:q,reseller_id:resellerId,kategori_id:kategoriId,status:status,sort:'kategori',dir:(sort=='kategori' and dir=='ASC' ? 'desc' : 'asc')}) }}" class="text-reset text-decoration-none d-inline-flex align-items-center gap-1">
+                                <span>Kategori</span>
+                                <i class="ph {% if sort=='kategori' %}{{ dir=='ASC' ? 'ph-sort-descending text-primary' : 'ph-sort-ascending text-primary' }}{% else %}ph-arrows-split opacity-25{% endif %} fs-xs"></i>
+                            </a>
+                        </th>
+                        <th class="text-end progress-cell">Keuangan & Progres</th>
+                        <th class="text-center">Status</th>
+                        <th class="text-center" style="width:140px;">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for a in anggotaList %}
+                        {% set sudah  = transSums[a.id] ?? 0 %}
+                        {% set target = a.kategori ? (a.kategori.nominalTarget ?: a.kategori.nominal) : 0 %}
+                        {% set sisa   = target > sudah ? (target - sudah) : 0 %}
+                        {% set pct    = target > 0 ? (sudah/target*100)|round(0) : 0 %}
+                        <tr>
+                            <td class="table-checkbox"><input type="checkbox" class="form-check-input row-checkbox" value="{{ a.id }}" aria-label="Pilih anggota {{ a.namaAnggota }}"></td>
+                            <td class="text-3 fs-sm fw-semibold">#{{ a.id }}</td>
+                            <td>
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="avatar">{{ a.namaAnggota|slice(0,1)|upper }}</div>
+                                    <div>
+                                        <div class="anggota-name">{{ a.namaAnggota }}</div>
+                                        <div class="anggota-code">{{ a.kodeAnggota ?: 'Tidak ada kode' }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                {% if a.reseller %}
+                                    <a href="{{ path('app_anggota_index', {reseller_id: a.reseller.id}) }}" class="text-decoration-none" title="Filter anggota reseller ini">
+                                        <div class="fw-medium">{{ a.reseller.namaReseller }}</div>
+                                        <div class="fs-xs text-3">{{ a.reseller.kodeReseller }}</div>
+                                    </a>
+                                {% else %}<span class="text-muted fst-italic">Tidak ada</span>{% endif %}
+                            </td>
+                            <td>
+                                {% if a.kategori %}
+                                    <a href="{{ path('app_anggota_index', {kategori_id: a.kategori.id}) }}" class="text-decoration-none" title="Filter anggota paket ini">
+                                        <span class="badge">{{ a.kategori.namaKategori }}</span>
+                                    </a>
+                                {% else %}<span class="text-muted fst-italic">—</span>{% endif %}
+                            </td>
+                            <td class="text-end">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    {% if target > 0 and sisa <= 0 %}
+                                        <span class="badge badge-green fs-xs"><i class="ph ph-check-circle me-1"></i>Lunas</span>
+                                    {% elseif target > 0 %}
+                                        <span class="badge bg-light text-muted border fs-xs">Sisa Rp {{ sisa|number_format(0,',','.') }}</span>
+                                    {% else %}
+                                        <span class="text-muted fs-xs">Tanpa Target</span>
+                                    {% endif %}
+                                    <span class="progress-pct {% if pct >= 100 %}text-success{% else %}text-primary{% endif %}">{{ pct }}%</span>
+                                </div>
+                                {% if target > 0 %}
+                                    <div class="progress-bar-custom">
+                                        <span class="{% if pct >= 100 %}bg-success{% else %}bg-primary{% endif %}" style="width:{{ min(pct,100) }}%;"></span>
+                                    </div>
+                                {% endif %}
+                                <div class="progress-amounts mt-1">
+                                    <span class="paid">Rp {{ sudah|number_format(0,',','.') }}</span> / Rp {{ target|number_format(0,',','.') }}
+                                </div>
+                            </td>
+                            <td class="text-center">
+                                <div class="d-flex flex-column gap-1 align-items-center">
+                                    {% if a.statusAktif %}
+                                        <span class="badge badge-green"><i class="ph ph-fill ph-check-circle me-1"></i>Aktif</span>
+                                    {% else %}
+                                        <span class="badge badge-red"><i class="ph ph-fill ph-x-circle me-1"></i>Nonaktif</span>
+                                    {% endif %}
+                                    {% if a.bonusThr %}
+                                        <span class="badge badge-yellow"><i class="ph ph-fill ph-gift me-1"></i>THR</span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td class="text-center">
+                                <div class="d-flex gap-2 justify-content-center">
+                                    <a href="{{ path('app_anggota_detail', {id:a.id}) }}" class="act-btn" title="Lihat Detail" aria-label="Lihat detail {{ a.namaAnggota }}"><i class="ph ph-eye" aria-hidden="true"></i></a>
+                                    <a href="{{ path('app_anggota_edit', {id:a.id}) }}" class="act-btn" title="Edit" aria-label="Edit {{ a.namaAnggota }}"><i class="ph ph-pencil-simple" aria-hidden="true"></i></a>
+                                    <form method="post" action="{{ path('app_anggota_delete', {id:a.id}) }}" class="d-inline"
+                                          data-confirm="Yakin ingin menghapus anggota {{ a.namaAnggota }}? Semua data terkait mungkin ikut terhapus.">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('app_anggota_delete') }}">
+                                        <button type="submit" class="act-btn danger" title="Hapus" aria-label="Hapus {{ a.namaAnggota }}"><i class="ph ph-trash" aria-hidden="true"></i></button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="8">
+                                <div class="empty">
+                                    <i class="ph ph-users"></i>
+                                    {% if hasFilter %}
+                                        <div class="empty-title">Tidak ada anggota ditemukan</div>
+                                        <div class="empty-sub">Cobalah menyesuaikan kata kunci pencarian atau filter Anda.</div>
+                                    {% else %}
+                                        <div class="empty-title">Data belum ditampilkan</div>
+                                        <div class="empty-sub">Isi kata kunci atau pilih filter lalu kirim untuk menampilkan daftar anggota.</div>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if totalPages > 1 %}
+            <div class="card-footer d-flex justify-content-between align-items-center border-top">
+                <div class="text-muted fs-base">
+                    Menampilkan halaman {{ currentPage }} dari {{ totalPages }} (Total {{ totalItems }} data)
+                </div>
+                <div class="pager">
+                    <a href="{% if currentPage > 1 %}{{ path('app_anggota_index', {q:q,reseller_id:resellerId,kategori_id:kategoriId,status:status,sort:sort,dir:dir,filter:1,page:currentPage-1}) }}{% else %}#{% endif %}" class="pager-btn {% if currentPage <= 1 %}disabled{% endif %}"><i class="ph ph-caret-left"></i></a>
+                    {% for p in max(1,currentPage-2)..min(totalPages,currentPage+2) %}
+                        <a href="{{ path('app_anggota_index', {q:q,reseller_id:resellerId,kategori_id:kategoriId,status:status,sort:sort,dir:dir,filter:1,page:p}) }}" class="pager-btn {% if p==currentPage %}active{% endif %}">{{ p }}</a>
+                    {% endfor %}
+                    <a href="{% if currentPage < totalPages %}{{ path('app_anggota_index', {q:q,reseller_id:resellerId,kategori_id:kategoriId,status:status,sort:sort,dir:dir,filter:1,page:currentPage+1}) }}{% else %}#{% endif %}" class="pager-btn {% if currentPage >= totalPages %}disabled{% endif %}"><i class="ph ph-caret-right"></i></a>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    document.getElementById('selectAll')?.addEventListener('change', function(e) {
+        document.querySelectorAll('.row-checkbox').forEach(cb => cb.checked = e.target.checked);
+    });
+</script>
+{% endblock %}

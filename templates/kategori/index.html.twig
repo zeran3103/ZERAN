@@ -1,0 +1,160 @@
+{% extends 'base.html.twig' %}
+{% block title %}Paket Tabungan — Zeran Parcel{% endblock %}
+
+{% block stylesheets %}
+<style>
+    .kategori { max-width: 1600px; margin: 0 auto; }
+    .kategori-filter-card { background: var(--bg-sub); border: 1px solid var(--border); border-radius: var(--radius); }
+    .kategori-filter-header { padding: 12px 16px; border-bottom: 1px solid var(--border); }
+    .kategori-filter-title { font-size: var(--fs-base); font-weight: 600; color: var(--text); }
+    .kategori-filter-body { padding: 16px; }
+    .kategori-stat { background: var(--bg-sub); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; position: relative; overflow: hidden; }
+    .kategori-stat::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+    .kategori-stat.s-accent::before { background: var(--accent); }
+    .kategori-stat .stat-label { font-size: var(--fs-xs); font-weight: 600; color: var(--text-3); margin-bottom: 6px; }
+    .kategori-stat .stat-val { font-size: clamp(1.1rem, 2vw, 1.4rem); font-weight: 700; color: var(--text); line-height: 1.2; letter-spacing: -.02em; }
+    .kategori-table td, .kategori-table th { vertical-align: middle; }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="kategori">
+    <div class="page-hd">
+        <div class="page-hd-row">
+            <div>
+                <h1>Paket Tabungan</h1>
+                <p>Kelola paket tabungan dan konfigurasi nominal.</p>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{{ path('app_kategori_new') }}" class="btn btn-primary">
+                    <i class="ph ph-plus-circle me-1"></i> Tambah Paket
+                </a>
+                <a href="{{ path('app_kategori_csv', {q: q}) }}" class="btn btn-outline-success" title="Export Excel / CSV">
+                    <i class="ph ph-file-xls me-1"></i> Export CSV
+                </a>
+                <a href="{{ path('app_kategori_index') }}" class="btn btn-secondary" title="Refresh">
+                    <i class="ph ph-arrow-clockwise me-1"></i> Refresh
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-3">
+        <div class="col-12 col-md-6">
+            <div class="kategori-stat s-accent">
+                <div class="stat-label">Total Kategori Paket</div>
+                <div class="stat-val">{{ kategoris|length }}</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="kategori-filter-card mb-3">
+        <div class="kategori-filter-header">
+            <div class="kategori-filter-title">Cari Paket</div>
+        </div>
+        <div class="kategori-filter-body">
+            <form method="get" action="{{ path('app_kategori_index') }}" class="row g-2 align-items-end">
+                <input type="hidden" name="filter" value="1">
+                <div class="col-12 col-md-8 col-lg-6">
+                    <label class="form-label text-3 fs-xs fw-semibold mb-1">Cari nama / kode / periode</label>
+                    <div class="input-group input-group-sm">
+                        <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Ketik nama paket, kode, atau periode...">
+                        <button type="submit" class="btn btn-primary" title="Cari">
+                            <i class="ph ph-magnifying-glass"></i>
+                        </button>
+                        <a href="{{ path('app_kategori_index') }}" class="btn btn-secondary" title="Reset Filter">
+                            <i class="ph ph-arrow-counter-clockwise"></i>
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="table-responsive">
+            <table class="data-table kategori-table table-hover">
+                <thead>
+                    <tr>
+                        <th class="table-checkbox"><input type="checkbox" class="form-check-input" id="selectAll" aria-label="Pilih semua kategori"></th>
+                        <th style="width:60px;">ID</th>
+                        <th>Info Paket</th>
+                        <th class="text-end">Nominal Setoran</th>
+                        <th class="text-center">Periode &amp; Frekuensi</th>
+                        <th class="text-end">Target Akhir</th>
+                        <th class="text-center">Peserta</th>
+                        <th class="text-center" style="width:120px;">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for k in kategoris %}
+                        <tr>
+                            <td class="table-checkbox"><input type="checkbox" class="form-check-input row-checkbox" value="{{ k.id }}" aria-label="Pilih kategori {{ k.nama_kategori }}"></td>
+                            <td class="text-3 fs-sm fw-semibold">#{{ k.id }}</td>
+                            <td>
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="bg-accent text-accent-fg align-items-center justify-content-center fw-semibold fs-md" style="width:36px;height:36px;border-radius:8px;display:flex">
+                                        <i class="ph ph-package"></i>
+                                    </div>
+                                    <div>
+                                        <div class="fw-semibold text-1">{{ k.nama_kategori }}</div>
+                                        <div class="fs-xs text-3">{{ k.kode_kategori ?: 'Tanpa kode' }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="text-end">
+                                <span class="fw-bold text-info fs-md">Rp {{ (k.nominal ?: 0)|number_format(0,',','.') }}</span>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge fs-sm">
+                                    <i class="ph ph-calendar me-1"></i>{{ k.periode }} ({{ k.jumlah_periode }}x)
+                                </span>
+                            </td>
+                            <td class="text-end">
+                                <span class="fw-bold text-success fs-md">Rp {{ (k.nominal_target ?: 0)|number_format(0,',','.') }}</span>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge badge-blue fs-base" style="padding:6px 12px">
+                                    <i class="ph ph-users me-1"></i>{{ k.total_peserta }}
+                                </span>
+                            </td>
+                            <td class="text-center">
+                                <div class="d-flex gap-2 justify-content-center">
+                                    <a href="{{ path('app_anggota_index', {kategori_id:k.id,filter:1}) }}" class="act-btn" title="Lihat Peserta" aria-label="Lihat peserta {{ k.nama_kategori }}"><i class="ph ph-users" aria-hidden="true"></i></a>
+                                    <a href="{{ path('app_kategori_edit', {id:k.id}) }}" class="act-btn" title="Edit" aria-label="Edit {{ k.nama_kategori }}"><i class="ph ph-pencil-simple" aria-hidden="true"></i></a>
+                                    <form method="post" action="{{ path('app_kategori_delete', {id:k.id}) }}" class="d-inline"
+                                          data-confirm="Yakin ingin menghapus paket {{ k.nama_kategori }}?">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('app_kategori_delete') }}">
+                                        <button type="submit" class="act-btn danger" title="Hapus" aria-label="Hapus {{ k.nama_kategori }}"><i class="ph ph-trash" aria-hidden="true"></i></button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="8">
+                                <div class="empty">
+                                    <i class="ph ph-inbox"></i>
+                                    {% if hasFilter %}
+                                        <div class="empty-title">Tidak ada kategori ditemukan</div>
+                                        <div class="empty-sub">Ubah kriteria pencarian Anda.</div>
+                                    {% else %}
+                                        <div class="empty-title">Data belum ditampilkan</div>
+                                        <div class="empty-sub">Isi kata kunci atau pilih filter lalu kirim untuk menampilkan daftar kategori.</div>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('selectAll')?.addEventListener('change', function(e) {
+        document.querySelectorAll('.row-checkbox').forEach(cb => cb.checked = e.target.checked);
+    });
+</script>
+{% endblock %}
