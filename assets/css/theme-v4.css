@@ -2031,8 +2031,8 @@ html:root body .dashboard-stat {
 }
 
 html:root body .dashboard-stat:hover {
-    transform: translateY(-4px) !important;
-    box-shadow: 0 16px 32px -4px rgba(0, 0, 0, 0.32), 0 0 0 1px rgba(255, 255, 255, 0.22) inset !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 10px 24px -4px rgba(0, 0, 0, 0.22), 0 0 0 1px rgba(255, 255, 255, 0.24) inset !important;
 }
 
 /* Dark mode dashboard stats: Rich Navy with Gold accents */
@@ -2060,11 +2060,12 @@ html.dark body .dashboard-stat .stat-sub {
 }
 html.dark body .dashboard-stat:hover {
     border-color: rgba(212, 165, 116, 0.45) !important;
-    transform: translateY(-4px) !important;
-    box-shadow: 0 16px 32px -4px rgba(0, 0, 0, 0.8), 0 0 16px rgba(212, 165, 116, 0.25) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 12px 28px -4px rgba(0, 0, 0, 0.75), 0 0 12px rgba(212, 165, 116, 0.2) !important;
 }
 
-/* 3D Floating Icon Badges */
+/* Impeccable State-Driven Icon Badge (No continuous loop debt) */
+.stat-icon-badge,
 .stat-3d-badge {
     position: relative;
     width: 38px;
@@ -2075,47 +2076,40 @@ html.dark body .dashboard-stat:hover {
     justify-content: center;
     background: rgba(255, 255, 255, 0.14);
     border: 1px solid rgba(255, 255, 255, 0.28);
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.35);
     font-size: 20px;
     color: #ffffff;
     flex-shrink: 0;
-    transition: filter 0.35s ease, box-shadow 0.35s ease;
-    will-change: transform;
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, filter 0.2s ease;
     z-index: 2;
 }
+html.dark .stat-icon-badge,
 html.dark .stat-3d-badge {
     background: rgba(212, 165, 116, 0.15);
     border: 1px solid rgba(212, 165, 116, 0.35);
     color: #d4a574;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(212, 165, 116, 0.4);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(212, 165, 116, 0.4);
 }
+.dashboard-stat:hover .stat-icon-badge,
 .dashboard-stat:hover .stat-3d-badge {
-    filter: brightness(1.18);
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+    transform: translateY(-1px) scale(1.05);
+    filter: brightness(1.15);
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+html.dark .dashboard-stat:hover .stat-icon-badge,
+html.dark .dashboard-stat:hover .stat-3d-badge {
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(212, 165, 116, 0.55);
 }
 
-/* 3D Continuous Floating Keyframes - Smooth, Gentle, High Performance */
-@keyframes anim3dVault {
-    0%, 100% { transform: translate3d(0, 0, 0); }
-    50% { transform: translate3d(0, -3px, 0); }
+@media (prefers-reduced-motion: reduce) {
+    html:root body .dashboard-stat,
+    .dashboard-stat:hover,
+    .stat-icon-badge,
+    .dashboard-stat:hover .stat-icon-badge {
+        transition: none !important;
+        transform: none !important;
+    }
 }
-@keyframes anim3dCoins {
-    0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg); }
-    50% { transform: translate3d(0, -3px, 0) rotate(4deg); }
-}
-@keyframes anim3dHourglass {
-    0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg); }
-    50% { transform: translate3d(0, -3px, 0) rotate(-4deg); }
-}
-@keyframes anim3dUsers {
-    0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
-    50% { transform: translate3d(0, -2px, 0) scale(1.05); }
-}
-
-.anim-3d-vault { animation: anim3dVault 3.6s ease-in-out infinite; }
-.anim-3d-coins { animation: anim3dCoins 3.2s ease-in-out infinite; }
-.anim-3d-hourglass { animation: anim3dHourglass 4s ease-in-out infinite; }
-.anim-3d-users { animation: anim3dUsers 3.8s ease-in-out infinite; }
 
 /* ── DASHBOARD GRID: 1 ROW LAYOUT ── */
 .dashboard-grid {

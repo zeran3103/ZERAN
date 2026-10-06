@@ -206,7 +206,7 @@
                     <span class="stat-label">Total target</span>
                     <div class="stat-number mt-1">Rp {{ totalTarget|number_format(0, ',', '.') }}</div>
                 </div>
-                <div class="stat-3d-badge anim-3d-vault" title="Total target kas"><i class="ph ph-vault"></i></div>
+                <div class="stat-icon-badge" title="Total target kas"><i class="ph ph-vault"></i></div>
             </div>
             <div class="d-flex align-items-center gap-2 mt-auto pt-2 flex-wrap">
                 <span class="stat-pill"><i class="ph ph-check-circle" aria-hidden="true"></i> Kas Penuh</span>
@@ -219,7 +219,7 @@
                     <span class="stat-label">Sudah terkumpul</span>
                     <div class="stat-number mt-1">Rp {{ totalSudahBayar|number_format(0, ',', '.') }}</div>
                 </div>
-                <div class="stat-3d-badge anim-3d-coins" title="Sudah terkumpul / setoran masuk"><i class="ph ph-hand-coins"></i></div>
+                <div class="stat-icon-badge" title="Sudah terkumpul / setoran masuk"><i class="ph ph-hand-coins"></i></div>
             </div>
             <div class="d-flex align-items-center gap-2 mt-auto pt-2 flex-wrap">
                 <span class="stat-pill"><i class="ph ph-trend-up" aria-hidden="true"></i> {{ persenCapaian }}%</span>
@@ -232,7 +232,7 @@
                     <span class="stat-label">Sisa target</span>
                     <div class="stat-number mt-1">Rp {{ sisaTarget|number_format(0, ',', '.') }}</div>
                 </div>
-                <div class="stat-3d-badge anim-3d-hourglass" title="Sisa tagihan berjalan"><i class="ph ph-hourglass-medium"></i></div>
+                <div class="stat-icon-badge" title="Sisa tagihan berjalan"><i class="ph ph-hourglass-medium"></i></div>
             </div>
             <div class="d-flex align-items-center gap-2 mt-auto pt-2 flex-wrap">
                 <span class="stat-pill"><i class="ph ph-hourglass-medium" aria-hidden="true"></i> {{ 100 - min(persenCapaian, 100) }}% sisa</span>
@@ -245,7 +245,7 @@
                     <span class="stat-label">Anggota aktif</span>
                     <div class="stat-number mt-1">{{ anggotaAktif|number_format(0, ',', '.') }}</div>
                 </div>
-                <div class="stat-3d-badge anim-3d-users" title="Kartu anggota aktif"><i class="ph ph-users-three"></i></div>
+                <div class="stat-icon-badge" title="Kartu anggota aktif"><i class="ph ph-users-three"></i></div>
             </div>
             <div class="d-flex align-items-center gap-2 mt-auto pt-2 flex-wrap">
                 <span class="stat-pill"><i class="ph ph-users" aria-hidden="true"></i> {{ totalReseller }} Reseller</span>
