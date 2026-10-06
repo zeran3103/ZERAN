@@ -1,0 +1,238 @@
+{#
+    PDF "Laporan Pembayaran" — tata letak, warna, dan aturan font mengikuti
+    laporan_export.php v1 + create_report_pdf_html() (Dompdf, A4 portrait).
+    Template ini hanya dipakai untuk ekspor PDF, bukan halaman layar.
+#}
+{% macro rp(value) %}Rp {{ value|number_format(0, ',', '.') }}{% endmacro %}
+{% macro rpCell(value) %}{{ (value > 0) ? 'Rp ' ~ value|number_format(0, ',', '.') : 'Rp -' }}{% endmacro %}
+{% macro angka(value) %}{{ value > 0 ? value|number_format(0, ',', '.') : '–' }}{% endmacro %}
+{% import _self as f %}
+{% set monthCount = monthKeys|length %}
+{% set dense = monthCount > 8 %}
+{% set pageMargin = dense ? 5 : 7 %}
+{% set tableFont = 6.8 %}
+{% set cellPadding = '3.5px 2.5px' %}
+{% if monthCount > 14 %}
+    {% set tableFont = 4.6 %}
+    {% set cellPadding = '2px 1px' %}
+{% elseif monthCount > 10 %}
+    {% set tableFont = 5.0 %}
+    {% set cellPadding = '2.2px 1.2px' %}
+{% elseif dense %}
+    {% set tableFont = 5.2 %}
+    {% set cellPadding = '2.4px 1.4px' %}
+{% elseif monthCount > 6 %}
+    {% set tableFont = 5.0 %}
+    {% set cellPadding = '2.6px 1.4px' %}
+{% elseif monthCount > 3 %}
+    {% set tableFont = 5.8 %}
+    {% set cellPadding = '3px 2px' %}
+{% endif %}
+{% set summaryFont = max(4.2, tableFont + 0.5) %}
+{% set tableFontCss = tableFont|number_format(1, '.', '') %}
+{% set summaryFontCss = summaryFont|number_format(1, '.', '') %}
+{% set monthTotalFontCss = (tableFont * 0.8)|number_format(1, '.', '') %}
+{% set codeFontCss = (tableFont * 0.85)|number_format(1, '.', '') %}
+<!DOCTYPE html>
+<html lang="id">
+<head><meta charset="utf-8">
+    
+    <title>Laporan Pembayaran</title>
+    <style>
+        @page { size: A4 {{ dense ? 'landscape' : 'portrait' }}; margin: {{ pageMargin }}mm {{ pageMargin }}mm 9mm; }
+        * { box-sizing: border-box; }
+        body { font-family: 'DejaVu Sans', sans-serif; background: #fff; margin: 0; color: #0f172a; font-size: 8px; }
+
+        .report-page { width: 100%; margin: 0; padding: 0; overflow: hidden; }
+
+        .report-header { margin-bottom: 8px; border: 1px solid #9bbdbd; border-radius: 6px; overflow: hidden; background: #fff; page-break-inside: avoid; }
+        .header-banner { width: 100%; border-collapse: collapse; background: #2d4a4a; }
+        .header-banner td { border: 0; padding: 10px 12px; background: transparent; color: #fff; vertical-align: middle; }
+        .brand-cell { width: 56%; }
+        .brand-mark {
+            display: inline-block; width: 30px; height: 30px; margin-right: 8px;
+            border-radius: 8px; background: #1b3333; color: #ffffff;
+            text-align: center; line-height: 30px; font-size: 16px; font-weight: 900; vertical-align: top;
+            border: 1px solid #4a7575;
+        }
+        .brand-copy { display: inline-block; vertical-align: top; }
+        .company-name { font-size: 16px; font-weight: 900; color: #fff; text-transform: uppercase; letter-spacing: .04em; }
+        .company-sub { margin-top: 3px; color: #d6e8e7; font-size: 7px; font-weight: 700; }
+        .report-side { text-align: right; }
+        .report-kicker {
+            display: inline-block; margin-bottom: 4px; padding: 3px 6px; border-radius: 999px;
+            background: #e6f0ef; color: #1b3333; font-size: 7px; font-weight: 900;
+            letter-spacing: .08em; text-transform: uppercase;
+        }
+        .report-title { font-size: 17px; font-weight: 900; color: #fff; text-transform: uppercase; letter-spacing: .03em; line-height: 1.15; }
+        .report-date { margin-top: 5px; color: #d6e8e7; font-size: 7px; font-weight: 700; }
+
+        .meta-table { width: 100%; border-collapse: collapse; font-size: 7px; table-layout: fixed; }
+        .meta-table td { border: 1px solid #cbd5e1; padding: 4px 5px; background: #f8fafc; word-break: break-word; overflow-wrap: anywhere; }
+        .meta-table td.meta-label { width: 68px; background: #edf5f5; color: #2d4a4a; font-weight: 900; text-transform: uppercase; }
+
+        .stats-table { width: 100%; border-collapse: separate; border-spacing: 4px; background: #f8fafc; border-top: 1px solid #cbd5e1; table-layout: fixed; }
+        .stats-table td { width: 33.333%; border: 1px solid #cbd5e1; border-left: 3px solid #2d4a4a; border-radius: 6px; padding: 6px; background: #fff; }
+        .stat-label { display: block; color: #64748b; font-size: 6px; font-weight: 900; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 4px; }
+        .stat-value { display: block; color: #2d4a4a; font-size: 10px; font-weight: 900; overflow-wrap: anywhere; }
+
+        .report-table {
+            width: 100%; max-width: 100%; table-layout: fixed; border-collapse: collapse;
+            border: 1px solid #2d4a4a; font-size: {{ tableFontCss }}px;
+        }
+        .report-table th, .report-table td {
+            padding: {{ cellPadding }}; font-size: {{ tableFontCss }}px; line-height: 1.1;
+            word-break: break-word; overflow-wrap: anywhere; white-space: normal; min-width: 0;
+        }
+        .report-table th { background: #2d4a4a; color: #fff; border: 1px solid #243c3c; text-align: left; text-transform: uppercase; letter-spacing: .02em; }
+        .report-table th.month-col { text-align: center; min-width: 0; width: auto; background: #3d6363; color: #ffffff; border: 1px solid #325353; }
+        .report-table th.no, .report-table td.no { width: 24px; }
+        .report-table th.name-col { width: 19%; }
+        .report-table th.sum-col { width: 9.5%; }
+        .report-table td { border: 1px solid #cbd5e1; background: #fff; }
+        .report-table td.num { text-align: right; white-space: normal; }
+        .report-table td.lunas { text-align: center; font-weight: 800; color: #166534; background: #f0fdf4; }
+        .report-table td.no { text-align: center; color: #475569; font-weight: 800; }
+        .report-table tbody tr:not(.category-row):not(.total-row):nth-child(even) td { background: #fbfdff; }
+
+        {% if dense %}
+        .report-table th.name-col { width: 16%; }
+        .report-table th.sum-col { width: 6.5%; }
+        {% if monthCount > 14 %}
+        .report-table th.name-col { width: 15%; }
+        .report-table th.sum-col { width: 6%; }
+        /* Kolom bulan tersempit: angka total bulan memakai font lebih kecil (tebal lebih lebar) agar tidak terbelah. */
+        .report-table tr.total-row td.total-month { font-size: {{ monthTotalFontCss }}px; }
+        {% endif %}
+        {% endif %}
+        .report-table thead { display: table-header-group; }
+        .report-table tr { page-break-inside: avoid; }
+        .report-table tr.category-row { page-break-after: avoid; }
+        .report-table tr.total-row { page-break-inside: avoid; }
+
+        .member-name { display: inline; }
+        .member-code { color: #64748b; font-size: {{ codeFontCss }}px; }
+
+        .category-row td {
+            background: #e6f0ef; color: #1b3333; font-weight: 900; text-transform: uppercase;
+            border-top: 2px solid #8bb5b4; border-bottom: 1px solid #9bbdbd;
+            letter-spacing: .02em; font-size: {{ tableFontCss }}px;
+        }
+        .total-row td { background: #dceae9; color: #102626; font-size: {{ summaryFontCss }}px; font-weight: 900; border-top: 2px solid #2d4a4a; }
+        .empty-row td { text-align: center; color: #64748b; }
+
+        .report-note { margin-top: 6px; font-size: 6.5px; color: #66758a; line-height: 1.4; }
+    </style>
+</head>
+<body>
+<div class="report-page">
+    <div class="report-header">
+        <table class="header-banner">
+            <tr>
+                <td class="brand-cell">
+                    <span class="brand-mark">Z</span>
+                    <span class="brand-copy">
+                        <span class="company-name">{{ companyName }}</span>
+                        {%- if companyTagline %}<br><span class="company-sub">{{ companyTagline }}</span>{% endif %}
+                        {%- if companyContact or companyAddress %}<br><span class="company-sub">{{ companyContact }}{% if companyContact and companyAddress %} | {% endif %}{{ companyAddress }}</span>{% endif %}
+                    </span>
+                </td>
+                <td class="report-side">
+                    <div class="report-kicker">Official Report</div>
+                    <div class="report-title">Laporan Pembayaran</div>
+                    <div class="report-date">No Dokumen: {{ documentNo }}</div>
+                    <div class="report-date">Tanggal Cetak: {{ generatedAt|date('d/m/Y H:i') }}</div>
+                </td>
+            </tr>
+        </table>
+
+        <table class="meta-table">
+            <tr>
+                <td class="meta-label">No Dokumen</td><td>{{ documentNo }}</td>
+                <td class="meta-label">Periode</td><td>{{ tahunLabel }}</td>
+                <td class="meta-label">Reseller</td><td>{{ resellerLabel }}</td>
+            </tr>
+            <tr>
+                <td class="meta-label">Paket</td><td>{{ kategoriLabel }}</td>
+                <td class="meta-label">Jumlah Anggota</td><td>{{ totalAnggota|number_format(0, ',', '.') }}</td>
+                <td class="meta-label">Total Transaksi</td><td>{{ totalTransaksi|number_format(0, ',', '.') }}</td>
+            </tr>
+            <tr>
+                <td class="meta-label">Total Bayar</td><td>Rp {{ totalBayar|number_format(0, ',', '.') }}</td>
+                <td class="meta-label">Waktu Cetak</td><td>{{ generatedAt|date('d/m/Y H:i') }} WIB</td>
+                <td class="meta-label">Status Dokumen</td><td>Sah / Terverifikasi Sistem</td>
+            </tr>
+        </table>
+
+        <table class="stats-table">
+            <tr>
+                <td>
+                    <span class="stat-label">Total Bayar</span>
+                    <span class="stat-value">Rp {{ totalBayar|number_format(0, ',', '.') }}</span>
+                </td>
+                <td>
+                    <span class="stat-label">Total Target</span>
+                    <span class="stat-value">Rp {{ totalTarget|number_format(0, ',', '.') }}</span>
+                </td>
+                <td>
+                    <span class="stat-label">Total Sisa</span>
+                    <span class="stat-value">Rp {{ totalSisa|number_format(0, ',', '.') }}</span>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <table class="report-table">
+        <thead>
+            <tr>
+                <th class="no">No</th>
+                <th class="name-col">Nama Anggota</th>
+                {% for mk in monthKeys %}<th class="month-col">{{ dense ? monthLabelsShort[mk] : monthLabels[mk] }}</th>{% endfor %}
+                <th class="sum-col">Total Bayar</th>
+                <th class="sum-col">Target</th>
+                <th class="sum-col">Sisa</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% if rows|length == 0 %}
+            <tr class="empty-row">
+                <td colspan="{{ 5 + monthCount }}">Tidak ada transaksi ditemukan untuk filter ini.</td>
+            </tr>
+            {% else %}
+            {% for category, items in groupedRows %}
+            <tr class="category-row">
+                <td colspan="{{ 5 + monthCount }}">{{ category }}</td>
+            </tr>
+            {% for row in items %}
+            <tr>
+                <td class="no">{{ loop.index }}</td>
+                <td><span class="member-name">{{ row.nama_anggota }}{% if row.kode_anggota %} <span class="member-code">{{ row.kode_anggota }}</span>{% endif %}</span></td>
+                {% for mk in monthKeys %}<td class="num">{{ f.angka(row.months[mk]) }}</td>{% endfor %}
+                <td class="num">{{ f.rpCell(row.total_bayar) }}</td>
+                <td class="num">{{ f.rp(row.target) }}</td>
+                {% if row.target > 0 and row.sisa <= 0 %}
+                    <td class="lunas">LUNAS</td>
+                {% else %}
+                    <td class="num">{{ f.rp(row.sisa) }}</td>
+                {% endif %}
+            </tr>
+            {% endfor %}
+            {% endfor %}
+            <tr class="total-row">
+                <td colspan="2">TOTAL {{ totalAnggota|number_format(0, ',', '.') }} ANGGOTA</td>
+                {% for mk in monthKeys %}<td class="num total-month">{{ f.angka(monthlyTotals[mk]|default(0)) }}</td>{% endfor %}
+                <td class="num">{{ f.rp(totalBayar) }}</td>
+                <td class="num">{{ f.rp(totalTarget) }}</td>
+                <td class="num">{{ f.rp(totalSisa) }}</td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+
+    <div class="report-note">Semua nilai dalam Rupiah (Rp). Tanda &ndash; berarti tidak ada pembayaran pada bulan tersebut.</div>
+    {% if exportNote %}
+    <div class="report-note">{{ exportNote }}</div>
+    {% endif %}
+</div>
+</body>
+</html>
