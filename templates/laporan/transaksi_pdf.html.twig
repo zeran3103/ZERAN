@@ -45,15 +45,15 @@
 
         .report-page { width: 100%; margin: 0; padding: 0; overflow: hidden; }
 
-        .report-header { margin-bottom: 8px; border: 1px solid #9bbdbd; border-radius: 6px; overflow: hidden; background: #fff; page-break-inside: avoid; }
-        .header-banner { width: 100%; border-collapse: collapse; background: #2d4a4a; }
+        .report-header { margin-bottom: 8px; border: 1px solid #c9d8d6; border-radius: 6px; overflow: hidden; background: #fff; page-break-inside: avoid; }
+        .header-banner { width: 100%; border-collapse: collapse; background: #1f3838; }
         .header-banner td { border: 0; padding: 10px 12px; background: transparent; color: #fff; vertical-align: middle; }
         .brand-cell { width: 56%; }
         .brand-mark {
             display: inline-block; width: 30px; height: 30px; margin-right: 8px;
-            border-radius: 8px; background: #1b3333; color: #ffffff;
+            border-radius: 8px; background: #132626; color: #ffffff;
             text-align: center; line-height: 30px; font-size: 16px; font-weight: 900; vertical-align: top;
-            border: 1px solid #4a7575;
+            border: 1px solid #3b5e5e;
         }
         .brand-copy { display: inline-block; vertical-align: top; }
         .company-name { font-size: 16px; font-weight: 900; color: #fff; text-transform: uppercase; letter-spacing: .04em; }
@@ -61,39 +61,39 @@
         .report-side { text-align: right; }
         .report-kicker {
             display: inline-block; margin-bottom: 4px; padding: 3px 6px; border-radius: 999px;
-            background: #e6f0ef; color: #1b3333; font-size: 7px; font-weight: 900;
+            background: #eef5f4; color: #1f3838; font-size: 7px; font-weight: 900;
             letter-spacing: .08em; text-transform: uppercase;
         }
         .report-title { font-size: 17px; font-weight: 900; color: #fff; text-transform: uppercase; letter-spacing: .03em; line-height: 1.15; }
         .report-date { margin-top: 5px; color: #d6e8e7; font-size: 7px; font-weight: 700; }
 
         .meta-table { width: 100%; border-collapse: collapse; font-size: 7px; table-layout: fixed; }
-        .meta-table td { border: 1px solid #cbd5e1; padding: 4px 5px; background: #f8fafc; word-break: break-word; overflow-wrap: anywhere; }
-        .meta-table td.meta-label { width: 68px; background: #edf5f5; color: #2d4a4a; font-weight: 900; text-transform: uppercase; }
+        .meta-table td { border: 1px solid #d4dde2; padding: 4px 6px; background: #fcfdfd; word-break: break-word; overflow-wrap: anywhere; }
+        .meta-table td.meta-label { width: 72px; background: #edf4f3; color: #1f3838; font-weight: 900; text-transform: uppercase; }
 
-        .stats-table { width: 100%; border-collapse: separate; border-spacing: 4px; background: #f8fafc; border-top: 1px solid #cbd5e1; table-layout: fixed; }
-        .stats-table td { width: 33.333%; border: 1px solid #cbd5e1; border-left: 3px solid #2d4a4a; border-radius: 6px; padding: 6px; background: #fff; }
-        .stat-label { display: block; color: #64748b; font-size: 6px; font-weight: 900; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 4px; }
-        .stat-value { display: block; color: #2d4a4a; font-size: 10px; font-weight: 900; overflow-wrap: anywhere; }
+        .stats-table { width: 100%; border-collapse: separate; border-spacing: 4px; background: #fbfcfc; border-top: 1px solid #d4dde2; table-layout: fixed; }
+        .stats-table td { width: 33.333%; border: 1px solid #d4dde2; border-left: 3px solid #243e3e; border-radius: 5px; padding: 6px 8px; background: #fff; }
+        .stat-label { display: block; color: #64748b; font-size: 6px; font-weight: 900; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 3px; }
+        .stat-value { display: block; color: #1f3838; font-size: 10px; font-weight: 900; overflow-wrap: anywhere; }
 
         .report-table {
             width: 100%; max-width: 100%; table-layout: fixed; border-collapse: collapse;
-            border: 1px solid #2d4a4a; font-size: {{ tableFontCss }}px;
+            border: 1px solid #243e3e; font-size: {{ tableFontCss }}px;
         }
         .report-table th, .report-table td {
-            padding: {{ cellPadding }}; font-size: {{ tableFontCss }}px; line-height: 1.1;
+            padding: {{ cellPadding }}; font-size: {{ tableFontCss }}px; line-height: 1.15;
             word-break: break-word; overflow-wrap: anywhere; white-space: normal; min-width: 0;
         }
-        .report-table th { background: #2d4a4a; color: #fff; border: 1px solid #243c3c; text-align: left; text-transform: uppercase; letter-spacing: .02em; }
-        .report-table th.month-col { text-align: center; min-width: 0; width: auto; background: #3d6363; color: #ffffff; border: 1px solid #325353; }
+        .report-table th { background: #243e3e; color: #fff; border: 1px solid #1a3030; text-align: left; text-transform: uppercase; letter-spacing: .02em; }
+        .report-table th.month-col { text-align: center; min-width: 0; width: auto; background: #2d4c4c; color: #ffffff; border: 1px solid #223c3c; }
         .report-table th.no, .report-table td.no { width: 24px; }
         .report-table th.name-col { width: 19%; }
         .report-table th.sum-col { width: 9.5%; }
-        .report-table td { border: 1px solid #cbd5e1; background: #fff; }
-        .report-table td.num { text-align: right; white-space: normal; }
-        .report-table td.lunas { text-align: center; font-weight: 800; color: #166534; background: #f0fdf4; }
+        .report-table td { border: 1px solid #d4dde2; background: #fff; }
+        .report-table td.num { text-align: right; white-space: normal; font-variant-numeric: tabular-nums; }
+        .report-table td.lunas { text-align: center; font-weight: 800; color: #0f5132; background: #e3f3eb; }
         .report-table td.no { text-align: center; color: #475569; font-weight: 800; }
-        .report-table tbody tr:not(.category-row):not(.total-row):nth-child(even) td { background: #fbfdff; }
+        .report-table tbody tr:not(.category-row):not(.total-row):nth-child(even) td { background: #fbfdfc; }
 
         {% if dense %}
         .report-table th.name-col { width: 16%; }
@@ -101,7 +101,7 @@
         {% if monthCount > 14 %}
         .report-table th.name-col { width: 15%; }
         .report-table th.sum-col { width: 6%; }
-        /* Kolom bulan tersempit: angka total bulan memakai font lebih kecil (tebal lebih lebar) agar tidak terbelah. */
+        /* Kolom bulan tersempit: angka total bulan memakai font lebih kecil agar tidak terbelah. */
         .report-table tr.total-row td.total-month { font-size: {{ monthTotalFontCss }}px; }
         {% endif %}
         {% endif %}
@@ -114,14 +114,19 @@
         .member-code { color: #64748b; font-size: {{ codeFontCss }}px; }
 
         .category-row td {
-            background: #e6f0ef; color: #1b3333; font-weight: 900; text-transform: uppercase;
-            border-top: 2px solid #8bb5b4; border-bottom: 1px solid #9bbdbd;
-            letter-spacing: .02em; font-size: {{ tableFontCss }}px;
+            background: #eef5f4; color: #163333; font-weight: 900; text-transform: uppercase;
+            border-top: 2px solid #8bb5b4; border-bottom: 1px solid #c9d8d6;
+            border-left: 3px solid #243e3e;
+            letter-spacing: .03em; font-size: {{ tableFontCss }}px;
+            padding: 4px 6px;
         }
-        .total-row td { background: #dceae9; color: #102626; font-size: {{ summaryFontCss }}px; font-weight: 900; border-top: 2px solid #2d4a4a; }
+        .total-row td {
+            background: #f7f2eb; color: #1a202c; font-size: {{ summaryFontCss }}px; font-weight: 900;
+            border-top: 2px solid #243e3e; border-bottom: 2px solid #243e3e;
+        }
         .empty-row td { text-align: center; color: #64748b; }
 
-        .report-note { margin-top: 6px; font-size: 6.5px; color: #66758a; line-height: 1.4; }
+        .report-note { margin-top: 6px; font-size: 6.5px; color: #64748b; line-height: 1.4; }
     </style>
 </head>
 <body>
