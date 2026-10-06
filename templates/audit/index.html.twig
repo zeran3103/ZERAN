@@ -29,10 +29,10 @@
                 <p>Rekam jejak aktivitas &amp; perubahan data sistem ({{ totalItems }} catatan ditemukan).</p>
             </div>
             <div class="d-flex gap-2">
-                <a href="{{ path('app_audit_csv', {q: q, action: action, tgl_dari: tglDari, tgl_sampai: tglSampai}) }}" class="btn btn-outline-success" title="Export CSV untuk Excel">
+                <a href="{{ path('app_audit_csv', {q: q, action: action, tgl_dari: tglDari, tgl_sampai: tglSampai}) }}" class="btn btn-primary" title="Export CSV untuk Excel">
                     <i class="ph ph-file-xls me-1"></i> Export CSV
                 </a>
-                <a href="{{ path('app_audit_index') }}" class="btn btn-secondary" title="Refresh"><i class="ph ph-arrow-clockwise me-1"></i> Refresh</a>
+                <a href="{{ path('app_audit_index') }}" class="btn btn-primary" title="Refresh"><i class="ph ph-arrow-clockwise me-1"></i> Refresh</a>
             </div>
         </div>
     </div>

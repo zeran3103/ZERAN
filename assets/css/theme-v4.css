@@ -1379,6 +1379,19 @@ fieldset:disabled .btn {
 .page-hd p { font-size: 13px; color: var(--text-2); margin: 0; }
 .page-hd-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
 .page-hd-row > :first-child { min-width: 0; }
+.page-hd .btn,
+.dashboard-hero .btn {
+    background: var(--accent);
+    color: var(--accent-fg) !important;
+    border-color: var(--accent);
+    font-weight: 600;
+}
+.page-hd .btn:hover,
+.dashboard-hero .btn:hover {
+    background: var(--accent-hover);
+    color: var(--accent-fg) !important;
+    border-color: var(--accent-hover);
+}
 
 /* Pagination */
 .pager {

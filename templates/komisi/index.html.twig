@@ -10,11 +10,11 @@
             <p>Laporan perhitungan komisi berdasarkan total omzet transaksi per reseller.</p>
         </div>
         <div class="commission-header-actions d-flex gap-2">
-            <button type="button" class="btn btn-outline-secondary commission-print-btn" onclick="window.print(); return false;" aria-label="Cetak laporan komisi">
+            <button type="button" class="btn btn-primary commission-print-btn" onclick="window.print(); return false;" aria-label="Cetak laporan komisi">
                 <i class="ph ph-printer" aria-hidden="true"></i><span>Cetak</span>
             </button>
             <a href="{{ path('app_laporan_komisi_csv', {tahun:tahun,bulan:bulan,rate:rate,reseller_id:resellerId,kategori_id:kategoriId,q:q,filter:1}) }}"
-               class="btn btn-success d-inline-flex align-items-center gap-1"
+               class="btn btn-primary d-inline-flex align-items-center gap-1"
                title="Export ke file Excel / CSV">
                 <i class="ph ph-file-xls"></i><span>Export CSV</span>
             </a>
