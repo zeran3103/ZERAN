@@ -116,7 +116,12 @@
     .member-nominal:focus {
         border-color: var(--accent) !important;
         box-shadow: 0 0 0 3px rgba(45, 74, 74, 0.15), 0 2px 8px rgba(45, 74, 74, 0.18) !important;
-        background: white;
+        background: var(--bg-card) !important;
+        color: var(--text) !important;
+    }
+    html.dark .member-nominal:focus {
+        background: var(--bg-card) !important;
+        box-shadow: 0 0 0 3px rgba(212, 165, 116, 0.25), 0 2px 8px rgba(0, 0, 0, 0.4) !important;
     }
     .member-nominal.is-overpay {
         border-color: var(--danger) !important;
@@ -1166,12 +1171,77 @@ document.addEventListener('DOMContentLoaded', function () {
 
         e.preventDefault();
         showModal('Konfirmasi Simpan', '<p>Simpan batch?</p><ul><li>'+count+' anggota</li><li>Total: Rp '+total.toLocaleString('id-ID')+'</li></ul>', true, () => {
+            // Clear local draft on successful confirmation
+            clearDraft();
             // Disable buttons to prevent double-submit
             const btns = formKolektif.querySelectorAll('button[type=submit]');
             btns.forEach(b => b.disabled = true);
             formKolektif.submit();
         });
     });
+
+    // ── LOCAL DRAFT AUTOSAVE & RESTORE ──
+    const draftKey = formKolektif ? `draft_kolektif_${resellerSel?.value || '0'}_{{ periode }}` : null;
+
+    function saveDraft() {
+        if (!draftKey || !formKolektif) return;
+        const data = {};
+        let count = 0;
+        document.querySelectorAll('.member-row').forEach(row => {
+            const chk = row.querySelector('.member-check');
+            const inp = row.querySelector('.member-nominal');
+            const mid = row.dataset.memberId;
+            if (mid && (inp?.value || chk?.checked)) {
+                data[mid] = { val: inp.value, chk: chk.checked };
+                if (inp.value) count++;
+            }
+        });
+        if (count > 0) {
+            try { localStorage.setItem(draftKey, JSON.stringify(data)); } catch (err) {}
+        } else {
+            try { localStorage.removeItem(draftKey); } catch (err) {}
+        }
+    }
+
+    function clearDraft() {
+        if (!draftKey) return;
+        try { localStorage.removeItem(draftKey); } catch (err) {}
+    }
+
+    function restoreDraft() {
+        if (!draftKey) return;
+        let raw = null;
+        try { raw = localStorage.getItem(draftKey); } catch (err) {}
+        if (!raw) return;
+        try {
+            const parsed = JSON.parse(raw);
+            const keys = Object.keys(parsed);
+            if (!keys.length) return;
+            keys.forEach(mid => {
+                const row = document.querySelector(`.member-row[data-member-id="${mid}"]`);
+                if (!row) return;
+                const chk = row.querySelector('.member-check');
+                const inp = row.querySelector('.member-nominal');
+                if (chk && !chk.disabled) chk.checked = parsed[mid].chk;
+                if (inp) {
+                    inp.value = parsed[mid].val;
+                    inp.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+            });
+            recalc();
+        } catch (err) {}
+    }
+
+    let draftTimer = null;
+    formKolektif?.addEventListener('input', function () {
+        clearTimeout(draftTimer);
+        draftTimer = setTimeout(saveDraft, 600);
+    });
+    formKolektif?.addEventListener('change', function () {
+        saveDraft();
+    });
+
+    restoreDraft();
 
     window.addEventListener('beforeunload', function (e) {
         let hasInput = false;

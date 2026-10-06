@@ -10,7 +10,7 @@
     <link href="{{ asset('assets/css/bootstrap.min.css') }}" rel="stylesheet">
     <link href="{{ asset('assets/icons/phosphor.css') }}?v=2" rel="stylesheet">
     <link href="{{ asset('assets/css/fonts.css') }}" rel="stylesheet">
-    <link href="{{ asset('assets/css/theme-v4.css') }}?v=upgrade-20261005M" rel="stylesheet">
+    <link href="{{ asset('assets/css/theme-v4.css') }}?v=upgrade-20261006A" rel="stylesheet">
     <script>
         (function() {
             const sysTheme = '{{ current_theme() }}';
@@ -392,6 +392,7 @@ document.addEventListener('submit', function (event) {
 
     const apiUrl = '{{ path('api_global_search') }}';
     const detailUrlBase = '{{ path('app_anggota_detail', {id: 0}) }}'.replace(/\/0$/, '');
+    const resellerIndexUrl = '{{ path('app_reseller_index') }}';
     const detailUrl = (id) => detailUrlBase + '/' + id;
     const MIN_CHARS = 2;
     const DEBOUNCE_MS = 250;
@@ -437,17 +438,34 @@ document.addEventListener('submit', function (event) {
 
         results.forEach((item) => {
             const link = document.createElement('a');
-            link.className = 'gs-item';
+            link.className = 'gs-item d-flex align-items-center justify-content-between gap-2';
             link.setAttribute('role', 'option');
-            link.href = detailUrl(item.id);
+
+            const isReseller = item.type === 'reseller';
+            if (isReseller) {
+                link.href = resellerIndexUrl + '?q=' + encodeURIComponent(item.kode || item.text);
+            } else {
+                link.href = detailUrl(item.id);
+            }
+
+            const left = document.createElement('div');
+            left.className = 'd-flex align-items-center gap-2 overflow-hidden';
 
             const icon = document.createElement('i');
-            icon.className = 'ph ph-user';
+            icon.className = isReseller ? 'ph ph-storefront text-primary' : 'ph ph-user text-muted';
+
             const text = document.createElement('span');
-            text.className = 'gs-item-text';
+            text.className = 'gs-item-text text-truncate';
             text.textContent = item.text;
 
-            link.append(icon, text);
+            left.append(icon, text);
+
+            const badge = document.createElement('span');
+            badge.className = 'badge border font-monospace ' + (isReseller ? 'bg-primary-subtle text-primary border-primary-subtle' : 'bg-body-secondary text-secondary border-secondary-subtle');
+            badge.style.fontSize = '10px';
+            badge.textContent = isReseller ? 'Reseller' : 'Anggota';
+
+            link.append(left, badge);
             panel.appendChild(link);
         });
 
@@ -472,7 +490,7 @@ document.addEventListener('submit', function (event) {
                     return;
                 }
                 if (!Array.isArray(results) || results.length === 0) {
-                    showMessage('Tidak ada anggota yang cocok.');
+                    showMessage('Tidak ada hasil yang cocok.');
                     return;
                 }
                 render(results);
