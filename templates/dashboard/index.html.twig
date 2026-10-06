@@ -425,7 +425,7 @@
 
     <div class="row g-3">
         <div class="col-12 col-xl-6">
-            <section class="card dashboard-card" aria-labelledby="lunas-title">
+            <section class="card dashboard-card dashboard-card-lunas" aria-labelledby="lunas-title">
                 <header class="dashboard-card-header d-flex justify-content-between align-items-center gap-2">
                     <div>
                         <h2 id="lunas-title" class="dashboard-section-title d-flex align-items-center gap-2">
@@ -465,8 +465,8 @@
                                     <td class="text-end text-success fw-bold">Rp {{ ln.total_bayar|number_format(0, ',', '.') }}</td>
                                     <td class="text-center"><span class="badge badge-green"><i class="ph ph-check-circle me-1" aria-hidden="true"></i>Lunas</span></td>
                                     <td class="text-center">
-                                        <a href="{{ path('app_anggota_detail', {id: ln.id}) }}" class="btn btn-xs btn-secondary" title="Detail Anggota">
-                                            <i class="ph ph-arrow-square-out me-1" aria-hidden="true"></i> Detail
+                                        <a href="{{ path('app_anggota_detail', {id: ln.id}) }}" class="btn btn-xs btn-outline-secondary" title="Detail Anggota {{ ln.nama_anggota }}" aria-label="Detail Anggota {{ ln.nama_anggota }}">
+                                            <i class="ph ph-arrow-square-out" aria-hidden="true"></i>
                                         </a>
                                     </td>
                                 </tr>
@@ -487,7 +487,7 @@
         </div>
 
         <div class="col-12 col-xl-6">
-            <section class="card dashboard-card" aria-labelledby="tunggakan-title">
+            <section class="card dashboard-card dashboard-card-tunggakan" aria-labelledby="tunggakan-title">
                 <header class="dashboard-card-header d-flex justify-content-between align-items-center gap-2">
                     <div>
                         <h2 id="tunggakan-title" class="dashboard-section-title d-flex align-items-center gap-2">
@@ -527,8 +527,8 @@
                                     <td class="text-end text-danger fw-bold">Rp {{ tg.sisa|number_format(0, ',', '.') }}</td>
                                     <td class="text-center"><span class="badge badge-amber"><i class="ph ph-hourglass me-1" aria-hidden="true"></i>Belum Lunas</span></td>
                                     <td class="text-center">
-                                        <a href="{{ path('app_anggota_detail', {id: tg.id}) }}" class="btn btn-xs btn-secondary" title="Detail Anggota">
-                                            <i class="ph ph-arrow-square-out me-1" aria-hidden="true"></i> Detail
+                                        <a href="{{ path('app_anggota_detail', {id: tg.id}) }}" class="btn btn-xs btn-outline-secondary" title="Detail Anggota {{ tg.nama_anggota }}" aria-label="Detail Anggota {{ tg.nama_anggota }}">
+                                            <i class="ph ph-arrow-square-out" aria-hidden="true"></i>
                                         </a>
                                     </td>
                                 </tr>

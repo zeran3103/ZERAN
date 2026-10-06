@@ -1953,21 +1953,25 @@ html.dark .text-info    { color: var(--accent) !important; }
 html:root body .dashboard-stat.s-accent {
     background: linear-gradient(135deg, #1d3636 0%, #294747 100%) !important;
     border: 1px solid rgba(212, 165, 116, 0.25) !important;
+    border-top: 3px solid #2ec4b6 !important;
     color: #ffffff !important;
 }
 html:root body .dashboard-stat.s-success {
-    background: linear-gradient(135deg, #243f3f 0%, #345757 100%) !important;
-    border: 1px solid rgba(212, 165, 116, 0.20) !important;
+    background: linear-gradient(135deg, #1b3d32 0%, #255444 100%) !important;
+    border: 1px solid rgba(46, 196, 182, 0.25) !important;
+    border-top: 3px solid #10b981 !important;
     color: #ffffff !important;
 }
 html:root body .dashboard-stat.s-warning {
-    background: linear-gradient(135deg, #2c4a4a 0%, #3e6666 100%) !important;
-    border: 1px solid rgba(212, 165, 116, 0.20) !important;
+    background: linear-gradient(135deg, #383424 0%, #4a422a 100%) !important;
+    border: 1px solid rgba(245, 158, 11, 0.25) !important;
+    border-top: 3px solid #f59e0b !important;
     color: #ffffff !important;
 }
 html:root body .dashboard-stat.s-info {
-    background: linear-gradient(135deg, #335454 0%, #477272 100%) !important;
-    border: 1px solid rgba(212, 165, 116, 0.20) !important;
+    background: linear-gradient(135deg, #203545 0%, #2d485e 100%) !important;
+    border: 1px solid rgba(56, 189, 248, 0.25) !important;
+    border-top: 3px solid #38bdf8 !important;
     color: #ffffff !important;
 }
 html:root body .dashboard-stat .stat-number {
@@ -2117,7 +2121,6 @@ html.dark .dashboard-stat:hover .stat-3d-badge {
     grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
     gap: 12px !important;
 }
-}
 @media (max-width: 991px) {
     .dashboard-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
@@ -2127,6 +2130,20 @@ html.dark .dashboard-stat:hover .stat-3d-badge {
     .dashboard-grid {
         grid-template-columns: 1fr !important;
     }
+}
+
+/* ── DASHBOARD SECTION CARDS: AUDIT ACCENT EDGES ── */
+.dashboard-card-lunas {
+    border-left: 3px solid #10b981 !important;
+}
+.dashboard-card-tunggakan {
+    border-left: 3px solid #f59e0b !important;
+}
+html.dark .dashboard-card-lunas {
+    border-left: 3px solid #10b981 !important;
+}
+html.dark .dashboard-card-tunggakan {
+    border-left: 3px solid #f59e0b !important;
 }
 
 /* FinTrack Component Styling (Preserving existing Teal & Gold palettes) */
