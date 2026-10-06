@@ -1532,15 +1532,129 @@ fieldset:disabled .btn {
 }
 
 /* ── PRINT STYLES ────────────────────────────────────── */
+@page {
+    size: auto;
+    margin: 12mm 10mm;
+}
+
 @media print {
-    #sidebar, .topbar, .overlay, .scroll-to-top, .toast-container, .btn, .pager, .filter-row, .breadcrumb-nav {
+    *, *::before, *::after {
+        box-shadow: none !important;
+        text-shadow: none !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    #sidebar, .topbar, .overlay, .scroll-to-top, .toast-container,
+    .btn, .pager, .filter-row, .breadcrumb-nav, .d-print-none, .no-print,
+    .laporan-filter-card, .commission-filter-card, .chart-card,
+    .pagination, .alert:not(.print-alert), form {
         display: none !important;
     }
-    #main { margin-left: 0 !important; }
-    body, .page { background: white !important; color: black !important; padding: 0 !important; }
-    .card, .stat, .data-table { border: 1px solid #000 !important; box-shadow: none !important; }
-    .data-table th, .data-table td { border: 1px solid #000 !important; color: black !important; background: transparent !important; }
-    .data-table th { background: #f0f0f0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+    #main {
+        margin-left: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    html, body, .page {
+        background: #ffffff !important;
+        color: #0f172a !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        font-size: 10pt !important;
+        line-height: 1.4 !important;
+    }
+
+    .page-hd {
+        background: transparent !important;
+        border: none !important;
+        border-bottom: 2px solid #2d4a4a !important;
+        border-radius: 0 !important;
+        padding: 0 0 10px 0 !important;
+        margin-bottom: 14px !important;
+    }
+
+    .page-hd h1 {
+        font-size: 16pt !important;
+        font-weight: 800 !important;
+        color: #2d4a4a !important;
+        margin: 0 0 2px 0 !important;
+    }
+
+    .page-hd p {
+        font-size: 9.5pt !important;
+        color: #475569 !important;
+        margin: 0 !important;
+    }
+
+    .card {
+        border: none !important;
+        background: transparent !important;
+        padding: 0 !important;
+        margin-bottom: 12px !important;
+    }
+
+    .table-responsive {
+        max-height: none !important;
+        overflow: visible !important;
+    }
+
+    table, .data-table, .commission-table, .closing-table {
+        width: 100% !important;
+        min-width: 100% !important;
+        border-collapse: collapse !important;
+        font-size: 8.5pt !important;
+        margin-bottom: 12px !important;
+    }
+
+    table th, table td,
+    .data-table th, .data-table td,
+    .commission-table th, .commission-table td,
+    .closing-table th, .closing-table td {
+        border: 1px solid #cbd5e1 !important;
+        color: #0f172a !important;
+        background: transparent !important;
+        padding: 5px 7px !important;
+        vertical-align: middle !important;
+    }
+
+    table th, .data-table th, .commission-table th, .closing-table th {
+        background: #f1f5f9 !important;
+        color: #1e293b !important;
+        font-weight: 700 !important;
+    }
+
+    tr.is-group td, tr.group-row td {
+        background: #e6f0ef !important;
+        color: #2d4a4a !important;
+        font-weight: 700 !important;
+    }
+
+    tr {
+        page-break-inside: avoid;
+    }
+
+    .stat, .laporan-stat, .bk-stat, .closing-stat, .kategori-stat, .reseller-stat, .settings-stat {
+        border: 1px solid #cbd5e1 !important;
+        border-left: 3px solid #2d4a4a !important;
+        background: #f8fafc !important;
+        padding: 6px 10px !important;
+        break-inside: avoid;
+    }
+
+    .stat-label {
+        font-size: 8pt !important;
+        color: #64748b !important;
+    }
+
+    .stat-val {
+        font-size: 11pt !important;
+        font-weight: 700 !important;
+        color: #0f172a !important;
+    }
 }
 
 /* ── REFINEMENTS ─────────────────────────────────────── */
